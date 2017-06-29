@@ -1,0 +1,43 @@
+---
+title: "Mortality among SLE patients"
+subtitle: "Project Notebook"
+author: "Abhijit Dasgupta"
+date: Last updated `r format(Sys.Date(), "%B %d, %Y")`
+output: html_notebook
+---
+
+# Background
+
+This study looks at the risk of mortality among patients admitted to 
+hospital with infection, and whether there are any differences between patients identified with SLE vs those who are not. The mortality rate
+has to be adjusted by the case-mix as well as by variability between hospitals. This is done in the literature using a random intercept logistic model. In fact, we could do a fully Bayesian model and fully 
+assess the model using partial pooling. There may be a need for assessing
+prior sensitivity, specially of the intercept variable component. 
+
+# Software considerations
+
+## R
+ The easiest option for fitting the random intercept logistic is using `lme4::glmer` or `arm`. For a fully Bayesian treatment of the model we could formulate it using JAGS, but it might be easier to use `stan`  through the `rstanarm` package. 
+ 
+__Resources__:
+
+1. _Multilevel Modeling Using R_ by Finch, Bolin and Kelley
+2. [Hierarchical Models with RStan](https://biologyforfun.wordpress.com/2016/11/10/hierarchical-models-with-rstan-part-1/)
+3. `ggmcmc` package for plotting MCMC diagnostics
+4. `MCMCglmm` 
+5. `glmmBUGS`
+6. [RStanArm vignette on HGLM](https://cran.rstudio.com/web/packages/rstanarm/vignettes/glmer.html)
+data
+
+## Python
+
+In Python, we can use either `PyStan` (see [this example](http://mc-stan.org/users/documentation/case-studies/radon.html)) or `PyMC3` (same example [done here](http://twiecki.github.io/blog/2014/03/17/bayesian-glms-3/)) to do the Bayesian 
+analysis. 
+
+__Resources__
+
+1. [Bayesian Modelling in Python](https://github.com/markdregan/Bayesian-Modelling-in-Python)
+    + Specially see Sections 2 and 3
+2. [PyMC3 documentation](https://pymc-devs.github.io/pymc3/notebooks/getting_started.html)
+3. [Bambi](https://github.com/bambinos/bambi)
+
