@@ -14,6 +14,24 @@ has to be adjusted by the case-mix as well as by variability between hospitals. 
 assess the model using partial pooling. There may be a need for assessing
 prior sensitivity, specially of the intercept variable component. 
 
+# Project plan
+
+We are looking first at SLE patients and then characterizing mortality rates at hospitals where 
+they arrive with an infection. We will first do a no-pooling model and then a partial pooling 
+model grouping within hospital adjusting for the case-mix. We will report (Table 2) the distribution
+of the estimated hospital intercept terms under a crude unadjusted model, a no-pooling model and a 
+partial pooling model (where you get shrinkage of the estimates due to borrowed strength)
+
+The next analysis asks how the hospital effects (random intercepts) vary by group-level covariates (like number of beds, region and the like)
+
+Third, we compare the experience of SLE patients with non-SLE patients to ascertain whether hospitals
+are bad in general or only with SLE patients. This can be done using separate partial pooling models on the two groups, adjusted for case-mix, or by doing a random-intercept, random interaction model of hospital x SLE, to see this. One wrinkle in this is that in the first
+analysis comorbidities were recorded by a SLE-specific score. For the comparison analysis we need to use a common comorbidity score, `elix_score` instead of `slecomb`. 
+
+Details and data dictionary are in docs/Hospital variation in mortality in serious infections in SLE.docx. 
+
+
+
 # Software considerations
 
 ## R
