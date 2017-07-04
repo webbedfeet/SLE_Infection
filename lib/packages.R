@@ -2,6 +2,7 @@
 pkgs <- c(
   'tidyverse',
   'stringr',
+  'broom',
   'haven',
   'rstan',
   'rstanarm',
