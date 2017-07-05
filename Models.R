@@ -17,12 +17,16 @@ lupus_data %>%
 
 fit_pool <- glm(dead ~ 1, data = lupus_data, 
                 family = binomial(link = 'logit'))
+fit_pool_ann <- glm(dead ~ year, data=lupus_data,
+                    family=binomial())
 
 fit_nopool <- glm(dead ~ 0 + hospid, data = lupus_data,
                   family = binomial())
 
 fit_partial <- glmer(dead ~ (1 | hospid), data = lupus_data,
                    family = binomial(link = 'logit'))
+fit_partial_ann <- glmer(dead ~ (1 | hospid:year), data = lupus_data,
+                     family = binomial(link = 'logit'))
 
 
 # Bayesian -----------------------------------------------------------------
@@ -38,6 +42,10 @@ fit_pool_b <- stan_glm(dead ~ 1, data=lupus_data,
                          family=binomial(link = 'logit'),
                          prior_intercept = wi_prior, seed = SEED)
 pool <- summary_stats(as.matrix(fit_pool_b))
+
+fit_pool_ann_b <- stan_glm(dead~ year, data=lupus_data,
+                           family=binomial(),
+                           prior_intercept = wi_prior, seed=SEED)
 
 fit_nopool_b <- stan_glm(dead ~ 0 + factor(hospid), data=lupus_data,
                      family = binomial(link = 'logit'),
@@ -80,6 +88,12 @@ fit_adj_partial <- glmer(dead ~ (1 | hospid) +
                          data = lupus_data,
                          family = binomial())
 
+fit_adj_partial_yr <- glmer(dead ~ (1 | hospid:year)+
+                              agecat + payer + 
+                              slecomb_cat + ventilator,
+                            data=lupus_data, 
+                            family = binomial())
+
 ## Bayesian using rstanarm
 
 SEED <- 201
@@ -112,3 +126,20 @@ save(fit_pool, fit_nopool, fit_partial, fit_pool_b, fit_partial_b,
      fit_adj_pool, fit_adj_nopool, fit_adj_partial, fit_adj_pool_b, 
      fit_adj_partial_b, 
      file=file.path(datadir,'data/rda/modelResults.rda'), compress=T)
+
+# Level I regression ------------------------------------------------------
+
+## Check to make sure features are unique at group-level 
+bl <- lupus_data %>% group_by(hospid) %>% 
+  summarise_at(vars(hosp_region, bedsize, teach, highvolume), 
+               funs(length(unique(.))))
+bl %>% select(-hospid) %>% 
+  purrrlyr::by_row(sum, .collate='cols', .to='totals') -> bl2
+bl2 = cbind(bl$hospid, bl2)
+bl2 %>% count(totals)
+
+### There are 293 hospitals where all the features are truly group-level. 
+### For the rest, there is at least one feature which changes within hospital, but
+### not within year. 
+
+
