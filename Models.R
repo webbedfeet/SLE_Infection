@@ -1,7 +1,8 @@
 # Hierarchical modeling of lupus data
 source('lib/reload.R'); reload()
-load('data/rda/data.rda')
+load(file.path(datadir,'data/rda/data.rda'))
 
+options(mc.cores = parallel::detectCores() - 1)
 # Crude mortality rates -----------------------------------------------------
 
 lupus_data %>% 
@@ -25,7 +26,6 @@ fit_partial <- glmer(dead ~ (1 | hospid), data = lupus_data,
 
 
 # Bayesian -----------------------------------------------------------------
-options(mc.cores = 3)
 
 SEED <- 201
 summary_stats <- function(posterior){
@@ -108,4 +108,7 @@ summary_stats(alphas)
 
 logit <- function(x) log(x/(1 - x))
 
-save(fit_pool, fit_nopool, fit_partial, fit_pool_b, fit_partial_b, fit_adj_pool, fit_adj_nopool, fit_adj_partial, fit_adj_pool_b, fit_adj_partial_b, file='data/rda/modelResults.rda', compress=T)
+save(fit_pool, fit_nopool, fit_partial, fit_pool_b, fit_partial_b, 
+     fit_adj_pool, fit_adj_nopool, fit_adj_partial, fit_adj_pool_b, 
+     fit_adj_partial_b, 
+     file=file.path(datadir,'data/rda/modelResults.rda'), compress=T)
