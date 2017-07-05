@@ -18,16 +18,6 @@ reload <- function(d = file.path(getwd(),'lib')){
     print(paste('Loading',f))
     source(file.path(d,'R',f), local = fn)
   }
-  # The following code is currently necessary on my Windows box due to some issues with
-  # devtools::install_github and not being able to install the development version of 
-  # MonetDBLite which reflects recent changes in dplyr v. 0.7.0. 
-  if (Sys.info()['sysname'] == 'Windows') {
-    for (f in dir(file.path(d,'..','scripts','MonetDBLite-master','R'))) {
-      if (f %in% c('dplyr.R','dbplyr.R')) {
-        source(file.path(d, '..', 'scripts','MonetDBLite-master','R', f), local = fn)
-      }
-    }
-  }
   attach(fn)    
   
 }

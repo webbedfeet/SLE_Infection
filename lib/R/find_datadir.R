@@ -1,13 +1,19 @@
 # Automatically locate the data files in Dropbox
 
-if (Sys.info()['sysname']=='Darwin') {
+if (Sys.info()['sysname'] == 'Darwin') {
   info <- RJSONIO::fromJSON(
     file.path(path.expand("~"),'.dropbox','info.json'))
-  dropbox_base <- info$personal$path
 }
 if (Sys.info()['sysname'] == 'Windows') {
   info <- RJSONIO::fromJSON(
-    file.path()
+    if (file.exists(file.path(Sys.getenv('APPDATA'), 'Dropbox','info.json'))) {
+      file.path(Sys.getenv('APPDATA'), 'Dropbox', 'info.json')
+    } else {
+    file.path(Sys.getenv('LOCALAPPDATA'),'Dropbox','info.json')
+    }
   )
 }
-datadir <- file.path(dropbox_base, 'NIAMS','Ward','SLE_Infections')
+
+dropbox_base <- info$personal$path
+datadir <- normalizePath(file.path(dropbox_base, 'NIAMS','Ward','SLE_Infections'),
+                         winslash='/')
