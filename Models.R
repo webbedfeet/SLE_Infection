@@ -25,7 +25,7 @@ fit_nopool <- glm(dead ~ 0 + hospid, data = lupus_data,
 
 fit_partial <- glmer(dead ~ (1 | hospid), data = lupus_data,
                    family = binomial(link = 'logit'))
-fit_partial_ann <- glmer(dead ~ (1 | hospid:year), data = lupus_data,
+fit_partial_ann <- glmer(dead ~ (1 | hospid)+(1|year), data = lupus_data,
                      family = binomial(link = 'logit'))
 
 
@@ -56,6 +56,12 @@ nopool <- summary_stats(as.matrix(fit_nopool_b))
 fit_partial_b <- stan_glmer(dead ~ (1 | hospid), data=lupus_data,
                           family = binomial(link = 'logit'),
                           prior_intercept = wi_prior, seed = SEED)
+
+fit_partial_ann_b <- stan_glmer(dead ~ (1 | hospid:year), data = lupus_data,
+                         family = binomial(link = 'logit'),
+                         prior_intercept = wi_prior, seed=SEED)
+
+
 partials <- summary_stats(as.matrix(fit_partial_b))
 
 shift_draws <- function(draws) {
@@ -88,10 +94,10 @@ fit_adj_partial <- glmer(dead ~ (1 | hospid) +
                          data = lupus_data,
                          family = binomial())
 
-fit_adj_partial_yr <- glmer(dead ~ (1 | hospid:year)+
+fit_adj_partial_ann <- glmer(dead ~ (1 | hospid)+(1|year)+
                               agecat + payer + 
                               slecomb_cat + ventilator,
-                            data=lupus_data, 
+                            data = lupus_data, 
                             family = binomial())
 
 ## Bayesian using rstanarm
@@ -112,6 +118,14 @@ fit_adj_partial_b <- stan_glmer(dead ~ (1 | hospid) +
                                 family = binomial(),
                                 prior_intercept = wi_prior,
                                 seed = SEED)
+fit_adj_partial_ann_b <- stan_glmer(dead ~ (1 | hospid:year)+
+                               agecat + payer + 
+                               slecomb_cat + ventilator,
+                             data = lupus_data, 
+                             family = binomial(),
+                             prior_intercept = wi_prior, 
+                             seed=SEED)
+
 
 shift_draws <- function(draws) {
   sweep(draws[,-(1:21)], MARGIN=1, STATS = draws[,1], FUN='+')
@@ -142,4 +156,7 @@ bl2 %>% count(totals)
 ### For the rest, there is at least one feature which changes within hospital, but
 ### not within year. 
 
-
+fit_b <- stan_glmer(dead ~ (0 + factor(hosp_region)|hospid), data=lupus_data,
+                    family=binomial(),
+                    prior_intercept = wi_prior,
+                    seed = SEED)
