@@ -71,7 +71,7 @@ ests_nopool <- function(m){
   out <- apply(blah*100, 2, quantile, qs) %>% 
     round(2) %>% as.data.frame(check.names=F) %>% 
     rownames_to_column('Percentile') %>% 
-    bind_cols('Estimate' = rep('No pooling',6),.)
+    bind_cols('Estimate' = rep('No pooling',n),.)
   return(out)
 }
 
@@ -85,12 +85,14 @@ ests_ppool <- function(m, nm='Partial pooling'){
     round(2) %>% as.data.frame(check.names=F) %>% 
     setNames(as.character(seq(2002,2011,by=1)))%>% 
     rownames_to_column('Percentile') %>% 
-    bind_cols('Estimate' = rep(nm,6),.) 
+    bind_cols('Estimate' = rep(nm,n),.) 
   return(out)
 }
 
 # Output tables -----------------------------------------------------------
 
+qs <- c(0,.1,.25,.5,.75,.9,1)
+n <- length(qs)
 out1 <- data.frame(rbind(
   'No pooling' = coef(fit_nopool) %>% plogis() %>% quantile(qs) %>% round(2),
   'Partial pooling' = coef(fit_ppool)$hospid %>% pull(`(Intercept)`) %>% plogis() %>% 
@@ -116,9 +118,54 @@ out3 <- data.frame(rbind(
   ests_nopool(fit_nopool_adj_yr),
   ests_ppool(fit_ppool_adj_yr),
   ests_ppool(fit_ppool_adj_yr_b, 'Bayesian')
-))
+), check.names=F)
 
 library(openxlsx)
 
 out <- list('Crude rates' = out1, "Case-mix adjusted" = out2, "Case-mix grouped by hospital and year" = out3)
 write.xlsx(out, file='docs/SLE Infection Tables.xlsx')
+
+d <- lupus_data %>% select(dead, hospid, year, agecat, payer, slecomb_cat, 
+                           ventilator) %>% 
+  filter(complete.cases(.))
+
+pred_data <- d %>% mutate(
+  p_adj = predict(fit_ppool_adj, ., type='response'),
+  p_adj_b = colMeans(posterior_predict(fit_ppool_adj_b, .)),
+  # p_adj_yr = predict(fit_ppool_adj_yr,., type='response'),
+  # p_adj_yr_b = colMeans(posterior_predict(fit_ppool_adj_yr_b, .)),
+  p_nopool_adj = predict(fit_nopool_adj,., type='response'),
+  p_nopool_adj_yr = predict(fit_nopool_adj_yr, ., type='response')
+) %>% 
+  group_by(hospid) %>% 
+  summarise_at(vars(starts_with('p_')), mean) %>% 
+  select(-hospid) %>% 
+  apply(2, quantile, qs) %>% 
+  round(4) %>% apply(2,'*',100)
+
+qs2 = c(0.05, 0.5, 0.95)
+d %>% mutate(
+  p_adj_yr = predict(fit_ppool_adj_yr,., type='response'),
+  p_adj_yr_b = colMeans(posterior_predict(fit_ppool_adj_yr_b, .))
+) %>% 
+  group_by(hospid, year) %>% 
+  summarise_at(vars(starts_with('p_')), mean) %>% ungroup() -> bl
+bl %>% nest(-year) %>% 
+  arrange(year) %>% mutate(d1 = map(data, ~apply(.[,-1], 2, quantile, qs2))) %>% 
+  mutate(d1 = map(d1, ~as.data.frame(.))) %>% 
+  mutate(d1 = map(d1, ~rownames_to_column(., 'Percentiles'))) %>% 
+  select(year, d1) %>% unnest() %>% 
+  mutate(percs = as.numeric(str_replace(Percentiles,'%',''))/100)-> bl2
+bl2 %>% gather(variable, value, starts_with('p_')) %>% 
+  spread(year, value) %>% 
+  arrange(variable, percs) %>% 
+  # select(-percs) %>% 
+  select(variable, Percentiles,percs, `2002`:`2011`)-> bl3
+
+bl3 %>% gather(year, value, -(variable:percs)) %>% 
+  select(-percs) %>% 
+  spread(Percentiles, value) %>% 
+  ggplot(aes(x=as.numeric(year), y = `50%`, ymin=`5%` , ymax = `95%`))+
+    geom_point()+geom_pointrange()+facet_wrap(~variable, nrow=1)
+pred_data %>% select(starts_with('p_')) %>% apply( 2, quantile, qs) %>% 
+  round(4)
