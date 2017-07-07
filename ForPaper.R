@@ -6,7 +6,7 @@ options(mc.cores = parallel::detectCores())
 
 SEED <- 300
 wi_prior <- normal(0,10)
-qs <- c(0,.1,.25,.5,.75,1)
+qs <- c(0,.1,.25,.5,.75,.9,1)
 # Unadjusted mortality rates ----------------------------------------------
 
 fit_nopool <- glm(dead ~ 0 + hospid, data=lupus_data, 
@@ -18,6 +18,9 @@ fit_ppool_b <- stan_glmer(dead ~ (1 | hospid), data=lupus_data,
                           prior_intercept = wi_prior,
                           seed = SEED)
 
+quantile(plogis(mean(predict(fit_ppool))+ranef(fit_ppool_b)$hospid[,1])*100,qs) %>% 
+  round(2) %>% as.data.frame() %>% rownames_to_column('Percentile') %>% 
+  setNames(c('Percentile','Mortality Rate')) -> bl
 
 # Adjusting for case-mix -------------------------------------------------
 
@@ -39,7 +42,11 @@ fit_ppool_adj_b <- stan_glmer(dead ~ (1|hospid) +
                               prior_intercept = wi_prior,
                               seed = SEED)
 
-
+fit_ppool_adj_1 <- glmer(dead ~ (1|hospid) +
+                           agecat + payer + slecomb_cat + 
+                           ventilator + year,
+                         data = lupus_data %>% filter(payer != '3'),
+                         family = binomial())
 
 # Adjust for case-mix, group across hospitals and years -------------------
 
@@ -169,3 +176,33 @@ bl3 %>% gather(year, value, -(variable:percs)) %>%
     geom_point()+geom_pointrange()+facet_wrap(~variable, nrow=1)
 pred_data %>% select(starts_with('p_')) %>% apply( 2, quantile, qs) %>% 
   round(4)
+
+
+# Reliability-adjusted mortality, following Dimick ------------------------
+
+## Compute the average mortality across hospitals, on logit scale
+
+d <- lupus_data %>% select(dead, hospid, year, agecat, payer, slecomb_cat, 
+                           ventilator) %>% 
+  filter(complete.cases(.))
+
+p = predict(fit_ppool_adj, d)
+avg_p <- mean(p)
+
+ram_adj <- plogis(avg_p + ranef(fit_ppool_adj)$hospid[,1])
+ram_adj_b <- plogis(avg_p + ranef(fit_ppool_adj_b)$hospid[,1])
+as.data.frame(round(quantile(ram_adj_b*100,qs),2)) %>% 
+  rownames_to_column('Percentile') %>% 
+  setNames(c('Percentile', 'Mortality Rate')) -> out_ram1
+
+round(quantile(100*ram_adj_b, qs),2)
+
+p_yr <- predict(fit_ppool_adj_yr, d)
+avg_p_yr <- d %>% mutate(p_yr = p_yr) %>% group_by(year) %>% summarise(avg = mean(p_yr))
+
+
+ram_adj_yr_b <- plogis(outer(ranef(fit_ppool_adj_yr_b)$hospid[,1],as.numeric(avg_p_yr$avg),'+')) %>% 
+  as.data.frame() %>% setNames(as.character(2002:2011))
+
+round(apply(ram_adj_yr_b*100,2,quantile,qs),2) %>% as.data.frame() %>% 
+  rownames_to_column("Percentile") %>%  as_tibble() -> out_ram2
