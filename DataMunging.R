@@ -5,10 +5,10 @@ source('lib/R/find_datadir.R') # Finds Dropbox data directory
 
 # Read data ---------------------------------------------------------------
 
-lupus_data <- read_sas(file.path(datadir,'data','sepsis_sle.sas7bdat'))
+lupus_data <- read_sas(file.path(datadir,'data','raw', 'sepsis_sle.sas7bdat'))
 names(lupus_data) <- tolower(names(lupus_data))
 
-nonlupus_data <- read_sas(file.path(datadir,'data','sepsis_nonlupus.sas7bdat'))
+nonlupus_data <- read_sas(file.path(datadir,'data','raw','sepsis_nonlupus.sas7bdat'))
 names(nonlupus_data) <- tolower(names(nonlupus_data))
 
 # Data munging ------------------------------------------------------------
@@ -20,5 +20,10 @@ lupus_data <- lupus_data %>%
   mutate(year_scaled = scale(as.numeric(as.character(year)),
                              center=T, scale=F))
 
+lupus_data %>% count(hospid) %>% filter(n >= 10) %>% 
+  select(hospid) %>% 
+  left_join(lupus_data) -> lupus_data_10
 
-save(lupus_data, nonlupus_data, file = 'data/rda/data.rda', compress=T)
+save(lupus_data, lupus_data_10, nonlupus_data, 
+     file = file.path(datadir,'data','rda','data.rda'), 
+     compress = T)
