@@ -1,33 +1,19 @@
 # Hierarchical modeling of lupus data
 source('lib/reload.R'); reload()
-load(file.path(datadir,'data/rda/data.rda'))
+load(file.path(datadir,'data','rda','data.rda'))
 
 options(mc.cores = parallel::detectCores() - 1)
+
+data_used <- lupus_data_10
+
 # Crude mortality rates -----------------------------------------------------
 
-lupus_data %>% 
+data_used %>% 
   group_by(hospid) %>% 
   summarise(mortality = mean(dead, na.rm = T)) -> crude_mortality
 
 
 # Non-adjusted models -----------------------------------------------------
-
-
-# Non-Bayesian ------------------------------------------------------------
-
-fit_pool <- glm(dead ~ 1, data = lupus_data, 
-                family = binomial(link = 'logit'))
-fit_pool_ann <- glm(dead ~ year, data=lupus_data,
-                    family=binomial())
-
-fit_nopool <- glm(dead ~ 0 + hospid, data = lupus_data,
-                  family = binomial())
-
-fit_partial <- glmer(dead ~ (1 | hospid), data = lupus_data,
-                   family = binomial(link = 'logit'))
-fit_partial_ann <- glmer(dead ~ (1 | hospid)+(1|year), data = lupus_data,
-                     family = binomial(link = 'logit'))
-
 
 # Bayesian -----------------------------------------------------------------
 
@@ -37,27 +23,28 @@ summary_stats <- function(posterior){
   t(apply(x, 2, quantile, probs = c(0, .1, .25, .5, .75,.9, 1)))
 }
 
-wi_prior <- normal(-1,1)
-fit_pool_b <- stan_glm(dead ~ 1, data=lupus_data, 
+wi_prior <- normal(0,10)
+
+fit_pool_b <- stan_glm(dead ~ 1, data=data_used, 
                          family=binomial(link = 'logit'),
                          prior_intercept = wi_prior, seed = SEED)
 pool <- summary_stats(as.matrix(fit_pool_b))
 
-fit_pool_ann_b <- stan_glm(dead~ year, data=lupus_data,
+fit_pool_ann_b <- stan_glm(dead~ year, data=data_used,
                            family=binomial(),
                            prior_intercept = wi_prior, seed=SEED)
 
-fit_nopool_b <- stan_glm(dead ~ 0 + factor(hospid), data=lupus_data,
+fit_nopool_b <- stan_glm(dead ~ 0 + factor(hospid), data=data_used,
                      family = binomial(link = 'logit'),
                      prior_intercept = wi_prior, 
                      seed = SEED)
 nopool <- summary_stats(as.matrix(fit_nopool_b))
 
-fit_partial_b <- stan_glmer(dead ~ (1 | hospid), data=lupus_data,
+fit_partial_b <- stan_glmer(dead ~ (1 | hospid), data=data_used,
                           family = binomial(link = 'logit'),
                           prior_intercept = wi_prior, seed = SEED)
 
-fit_partial_ann_b <- stan_glmer(dead ~ (1 | hospid:year), data = lupus_data,
+fit_partial_ann_b <- stan_glmer(dead ~ (1 | hospid:year), data = data_used,
                          family = binomial(link = 'logit'),
                          prior_intercept = wi_prior, seed=SEED)
 
@@ -67,6 +54,7 @@ partials <- summary_stats(as.matrix(fit_partial_b))
 shift_draws <- function(draws) {
   sweep(draws[,-1], MARGIN=1, STATS = draws[,1], FUN='+')
 }
+
 bl <- as.data.frame(summary_stats(shift_draws(as.matrix(fit_partial_b))))
 
 ggplot(bl, aes(x = 1:nrow(bl), y =`50%`, ymin = `10%`, ymax = `90%`))+
@@ -79,26 +67,15 @@ ggplot(bl, aes(x = 1:nrow(bl), y =`50%`, ymin = `10%`, ymax = `90%`))+
 fit_adj_pool <- glm(dead ~  agecat + payer + 
                       + slecomb_cat + 
                       ventilator + year,
-                    data = lupus_data,
+                    data = data_used,
                     family = binomial())
 
 fit_adj_nopool <- glm(dead ~ 0 + hospid +
                         agecat + payer + 
                         slecomb_cat + ventilator + year, 
-                      data = lupus_data, 
+                      data = data_used, 
                       family  = binomial())
 
-fit_adj_partial <- glmer(dead ~ (1 | hospid) + 
-                           agecat + payer + 
-                           slecomb_cat + ventilator + year, 
-                         data = lupus_data,
-                         family = binomial())
-
-fit_adj_partial_ann <- glmer(dead ~ (1 | hospid)+(1|year)+
-                              agecat + payer + 
-                              slecomb_cat + ventilator,
-                            data = lupus_data, 
-                            family = binomial())
 
 ## Bayesian using rstanarm
 
@@ -107,21 +84,21 @@ wi_prior <- normal(0,10)
 fit_adj_pool_b <- stan_glm(dead ~  agecat + payer + 
                              + slecomb_cat + 
                              ventilator + year,
-                           data = lupus_data,
+                           data = data_used,
                            family = binomial(),
                            prior_intercept = wi_prior,
                            seed = SEED)
 fit_adj_partial_b <- stan_glmer(dead ~ (1 | hospid) + 
                                   agecat + payer + 
                                   slecomb_cat + ventilator + year, 
-                                data = lupus_data,
+                                data = data_used,
                                 family = binomial(),
                                 prior_intercept = wi_prior,
                                 seed = SEED)
 fit_adj_partial_ann_b <- stan_glmer(dead ~ (1 | hospid:year)+
                                agecat + payer + 
                                slecomb_cat + ventilator,
-                             data = lupus_data, 
+                             data = data_used, 
                              family = binomial(),
                              prior_intercept = wi_prior, 
                              seed=SEED)
@@ -144,7 +121,7 @@ save(fit_pool, fit_nopool, fit_partial, fit_pool_b, fit_partial_b,
 # Level I regression ------------------------------------------------------
 
 ## Check to make sure features are unique at group-level 
-bl <- lupus_data %>% group_by(hospid) %>% 
+bl <- data_used %>% group_by(hospid) %>% 
   summarise_at(vars(hosp_region, bedsize, teach, highvolume), 
                funs(length(unique(.))))
 bl %>% select(-hospid) %>% 
@@ -156,7 +133,7 @@ bl2 %>% count(totals)
 ### For the rest, there is at least one feature which changes within hospital, but
 ### not within year. 
 
-fit_b <- stan_glmer(dead ~ (0 + factor(hosp_region)|hospid), data=lupus_data,
+fit_b <- stan_glmer(dead ~ (0 + factor(hosp_region)|hospid), data=data_used,
                     family=binomial(),
                     prior_intercept = wi_prior,
                     seed = SEED)
