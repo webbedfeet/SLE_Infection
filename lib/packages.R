@@ -3,6 +3,7 @@ pkgs <- c(
   'tidyverse',
   'stringr',
   'broom',
+  'cowplot',
   'haven',
   'rstan',
   'rstanarm',
