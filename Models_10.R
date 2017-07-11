@@ -1,4 +1,4 @@
-# Final tables and figures for paper
+# Models for data with hospitals restricted to at least 10 admissions
 
 source('lib/reload.R'); reload()
 load(file.path(datadir, 'data/rda/data.rda'))
@@ -50,7 +50,7 @@ fit_ppool_adj_yr_b <- stan_glmer(dead ~ (1|hospid) + (1|year) +
 
 save(fit_nopool,  fit_ppool_b, fit_nopool_adj,  fit_ppool_adj_b, fit_nopool_adj_yr, 
      fit_ppool_adj_yr_b, 
-     file = file.path(datadir,'data','rda','ForPaper.rda'),
+     file = file.path(datadir,'data','rda','Models_10.rda'),
      compress = T)
 
 # Reliability-adjusted mortality, following Dimick ------------------------
@@ -61,13 +61,8 @@ d <- data_used %>% select(dead, hospid, year, agecat, payer, slecomb_cat,
                            ventilator) %>% 
   filter(complete.cases(.))
 
-p <- posterior_linpred(fit_ppool_adj_b)
-avg_p <- mean(p)
 
-ram_adj_b <- plogis(avg_p + ranef(fit_ppool_adj_b)$hospid[,1])
-as.data.frame(quantile(ram_adj_b*100,qs)) %>% 
-  rownames_to_column('Percentile') %>% 
-  setNames(c('Percentile', 'Mortality Rate')) -> out_ram1
+out_ram1 <- ram(fit_ppool_adj_b, d)
 
 p_yr <- colMeans(posterior_linpred(fit_ppool_adj_yr_b))
 avg_p_yr <- d %>% mutate(p_yr = p_yr) %>% group_by(year) %>% summarise(avg = mean(p_yr))
