@@ -12,5 +12,5 @@ for(p in pkgs){
   if(!(p %in% installed.packages()[,1])){
     install.packages(p, repos='http://cran.rstudio.com')
   }
-  library(p, character.only = TRUE)
+  suppressPackageStartupMessages(library(p, character.only = TRUE))
 }
