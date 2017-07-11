@@ -15,7 +15,8 @@ SEED = 301
 lupus_data %>% 
   group_by(hospid) %>% 
   summarise(n = n(),vent = mean(ventilator=='1', na.rm=T)) %>%   # ventilator is a factor
-  ggplot(aes(n, vent))+geom_point()+geom_smooth()
+  ggplot(aes(n, vent))+geom_point()+geom_smooth() + 
+    labs(x = 'Number of admissions', y = "Proportion admitted on ventilator")
 
 # Modeling full data without ventilator adjustment ------------------------
 
