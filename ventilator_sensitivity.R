@@ -32,7 +32,7 @@ out_5 <- left_join(
 
 # Modeling reduced data without ventilator adjustment ---------------------
 
-load(file.path(datadir,'data','rda','forPaper.rda')) # This is using n=10 cutoff
+load(file.path(datadir,'data','rda','Models_10.rda')) # This is using n=10 cutoff
 
 fit_partial_10 <- update(fit_ppool_adj_b, . ~ . - ventilator)
 
