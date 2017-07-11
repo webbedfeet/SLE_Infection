@@ -5,7 +5,7 @@ load(file.path(datadir, 'data/rda/data.rda'))
 options(mc.cores = parallel::detectCores())
 
 SEED <- 300
-wi_prior <- normal(-2,10)
+wi_prior <- normal(0,10)
 qs <- c(0,.1,.25,.5,.75,.9,1)
 
 data_used <- lupus_data_10
