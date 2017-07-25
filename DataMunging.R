@@ -24,6 +24,14 @@ lupus_data %>% count(hospid) %>% filter(n >= 10) %>%
   select(hospid) %>% 
   left_join(lupus_data) -> lupus_data_10
 
+nonlupus_data <- nonlupus_data %>% 
+  mutate_at(vars(male, agecat, payer, zipinc_qrtl, ventilator, year, 
+                 hospid),
+            as.factor) %>% 
+  mutate(year_scaled = scale(as.numeric(as.character(year)),
+                             center = T, scale = F))
+  
+
 save(lupus_data, lupus_data_10, nonlupus_data, 
      file = file.path(datadir,'data','rda','data.rda'), 
      compress = T)
