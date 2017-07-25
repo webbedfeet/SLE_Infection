@@ -12,7 +12,7 @@
 #'
 #' @examples
 ram <- function(fit, d, qs = c(0,.1, .25, .5,.75,.9,1)) {
-  p <- posterior_linpred(fit)
+  p <- fit$linear.predictors
   avg_p <- mean(p)
   
   ram <- plogis(avg_p + ranef(fit)$hospid[,1])
