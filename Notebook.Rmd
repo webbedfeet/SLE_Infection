@@ -1,5 +1,5 @@
 ---
-title: "Mortality among SLE patients"
+title: "Mortality among SLE patients with sepsis"
 subtitle: "Project Notebook"
 author: "Abhijit Dasgupta"
 date: Last updated `r format(Sys.Date(), "%B %d, %Y")`
@@ -59,3 +59,24 @@ __Resources__
 2. [PyMC3 documentation](https://pymc-devs.github.io/pymc3/notebooks/getting_started.html)
 3. [Bambi](https://github.com/bambinos/bambi)
 
+
+# Updates
+
+## July 26, 2017
+
+An interesting aspect of the data is how hospitals with poor prognoses for nonlupus
+patients will often do worse for lupus patients. This was evidenced by the following 
+graph:
+
+```{r}
+source('lib/reload.R'); reload()
+load(file.path(datadir, 'data','rda','data.rda'))
+ggplot(hosp_data, aes(x = lupus_mortality, y = nonlupus_mortality))+geom_point()+
+  geom_vline(xintercept = 0.2)+geom_hline(yintercept = 0.2) +
+  geom_abline()
+```
+It appears that once lupus mortality in a hospital is greater than 20%, it is __always__ worse than nonlupus mortality, whereas for hospitals with lupus mortality
+less than 20%, there appears to be pretty much randomness about whether lupus or 
+non-lupus mortality is higher. 
+
+Turns out that the best predictor of lupus mortality greater than 20% is the proportion of lupus patients admitted on a ventilator.
