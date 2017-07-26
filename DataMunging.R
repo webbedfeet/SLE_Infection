@@ -1,6 +1,5 @@
 # Data acquisition and munging
 source('lib/reload.R'); reload()
-source('lib/R/find_datadir.R') # Finds Dropbox data directory
 
 
 # Read data ---------------------------------------------------------------
@@ -18,7 +17,7 @@ lupus_data <- lupus_data %>%
                  ventilator,  year, hospid),
             as.factor) %>% 
   mutate(year_scaled = scale(as.numeric(as.character(year)),
-                             center=T, scale=F))
+                             center = T, scale = F))
 
 lupus_data %>% count(hospid) %>% filter(n >= 10) %>% 
   select(hospid) %>% 
@@ -31,7 +30,23 @@ nonlupus_data <- nonlupus_data %>%
   mutate(year_scaled = scale(as.numeric(as.character(year)),
                              center = T, scale = F))
   
+hosp_data <- nonlupus_data %>% 
+  group_by(hospid) %>% 
+  summarise(nonlupus_admissions = n(), 
+            nonlupus_mortality = mean(dead),
+            teach = max(teach),
+            highvolume = max(highvolume),
+            nonlupus_vent = mean(ventilator == '1')) %>% 
+  full_join(lupus_data %>% group_by(hospid) %>% 
+              summarise(lupus_admissions = n(), 
+                        lupus_mortality = mean(dead), 
+                        lupus_vent = mean(ventilator == '1')),
+            by = 'hospid') %>% 
+  mutate(total_admissions = lupus_admissions + nonlupus_admissions) %>% 
+  select(-lupus_admissions, -nonlupus_admissions)
+            
+            
 
-save(lupus_data, lupus_data_10, nonlupus_data, 
+save(lupus_data, lupus_data_10, nonlupus_data, hosp_data,
      file = file.path(datadir,'data','rda','data.rda'), 
      compress = T)
