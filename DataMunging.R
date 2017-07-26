@@ -42,7 +42,8 @@ hosp_data <- nonlupus_data %>%
                         lupus_mortality = mean(dead), 
                         lupus_vent = mean(ventilator == '1')),
             by = 'hospid') %>% 
-  mutate(total_admissions = lupus_admissions + nonlupus_admissions) %>% 
+  mutate(total_admissions = lupus_admissions + nonlupus_admissions,
+         prop_lupus = lupus_admissions / total_admissions) %>% 
   select(-lupus_admissions, -nonlupus_admissions)
             
             
