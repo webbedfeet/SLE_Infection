@@ -137,3 +137,35 @@ fit_b <- stan_glmer(dead ~ (0 + factor(hosp_region)|hospid), data=data_used,
                     family=binomial(),
                     prior_intercept = wi_prior,
                     seed = SEED)
+
+
+
+# Looking at hospital-based lupus effect ----------------------------------
+
+newdata <- bind_rows(lupus_data, nonlupus_data)
+
+newdata <- newdata %>% 
+  mutate_at(vars( lupus), as.factor)
+
+
+m1 <- glm(dead ~ lupus*hospid + agecat + payer + ventilator + race + 
+            zipinc_qrtl + elix_score, data = newdata, 
+          family = binomial())
+m <- glmer(dead ~ (1 + lupus | hospid))
+
+
+hosp_fails = hosp_data$hospid[hosp_data$lupus_mortality>0]
+
+extract_lupus <- function(m){
+  if(class(m) =='try-error') return(NA)
+  return(tidy(m) %>% filter(term=='lupus1') %>% pull(estimate))
+}
+m <- newdata %>% 
+  # filter(hospid %in% hosp_fails) %>% 
+  nest(-hospid) %>% 
+  mutate(mods = map(data, ~try(glm(dead ~ lupus + agecat + payer + ventilator +
+                                  elix_score, data=.,
+                               family = binomial()))),
+         lupus_estimate = map_dbl(mods, 
+                              ~extract_lupus(.)))
+
