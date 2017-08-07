@@ -80,3 +80,13 @@ less than 20%, there appears to be pretty much randomness about whether lupus or
 non-lupus mortality is higher. 
 
 Turns out that the best predictor of lupus mortality greater than 20% is the proportion of lupus patients admitted on a ventilator.
+
+## August 7, 2017
+
+The idea is to see at the hospital level how lupus mortality relates to non-lupus (or nominal) 
+mortality. Conceptually, we could consider _a priori_ that a lupus patient would experience the 
+same chance of death as a non-lupus patient, and then see how many excess deaths we observe in lupus
+patients. This approach would account for the 0 death hospitals, since even under the non-lupus rate, seeing 0 events would not be unusual. Can we take a Bayesian approach to seeing whether
+lupus patients have excess risk. 
+
+Alternatively, we could fit an ecological model on the non-lupus data to see how well we could predict mortality based on hospital-level factors, and then look at the counterfactual effect in the lupus patients. This should be able to give us the average treatment effect for being admitted as a lupus patient. 
