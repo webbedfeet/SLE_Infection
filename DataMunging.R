@@ -34,12 +34,14 @@ hosp_data <- nonlupus_data %>%
   group_by(hospid) %>% 
   summarise(nonlupus_admissions = n(), 
             nonlupus_mortality = mean(dead),
+            nonlupus_dead = sum(dead),
             teach = max(teach),
             highvolume = max(highvolume),
             nonlupus_vent = mean(ventilator == '1')) %>% 
-  full_join(lupus_data %>% group_by(hospid) %>% 
+  inner_join(lupus_data %>% group_by(hospid) %>% 
               summarise(lupus_admissions = n(), 
                         lupus_mortality = mean(dead), 
+                        lupus_dead = sum(dead),
                         lupus_vent = mean(ventilator == '1')),
             by = 'hospid') %>% 
   mutate(total_admissions = lupus_admissions + nonlupus_admissions,
