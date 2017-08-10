@@ -37,6 +37,8 @@ hosp_data <- nonlupus_data %>%
             nonlupus_dead = sum(dead),
             teach = max(teach),
             highvolume = max(highvolume),
+            bedsize = max(bedsize),
+            hosp_region = max(hosp_region),
             nonlupus_vent = mean(ventilator == '1')) %>% 
   inner_join(lupus_data %>% group_by(hospid) %>% 
               summarise(lupus_admissions = n(), 
