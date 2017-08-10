@@ -90,3 +90,16 @@ patients. This approach would account for the 0 death hospitals, since even unde
 lupus patients have excess risk. 
 
 Alternatively, we could fit an ecological model on the non-lupus data to see how well we could predict mortality based on hospital-level factors, and then look at the counterfactual effect in the lupus patients. This should be able to give us the average treatment effect for being admitted as a lupus patient. 
+
+The main idea has to be to see how unlikely the observed numbers of events are under the assumption that there is no difference between the mortality rates in lupus and non-lupus patients admitted with sepsis. This can certainly be done on a hospital-by-hospital basis, but it may be more useful to model the non-lupus mortality in terms of hospital characteristics and then score the lupus admissions using this model. Then we might use something like a Standardized Mortality Rate (SMR) to evaluate how different the observed number of deaths are from the expected number of deaths under the non-lupus model. 
+
+Alternatively, at the individual level, we could see if there is a lupus status by hospital interaction (or a random slope model) that would indicate differences between the lupus and non-lupus groups in terms of mortality rate. This could be done under a hierarchical logistic model including patient data from each hospital. 
+
+A third idea would be to use a estimate from non-lupus mortality (via empirical estimates or modeling), and then proceed with a microsimulation to see how often we would see the number of deaths we saw in each hospital
+
+4. If there is truly no difference between lupus and non-lupus death rates, the distribution of p-values from the independent tests should be U(0,1). This is a testable hypothesis using a Kolmogorov test, for example. 
+
+One issue is that this is purely an observational study, with no randomization involved. However, we could conceptually get permutation p-values to ascertain whether the two groups are similar or not. 
+
+Are there meta-analytic methods we could use? In fact, we could assume that the hospitals are a random subset of all hospitals in the US (since this is from NIS), and then look at the difference in rates, aggregating using a random effects meta-analysis. We could also add a meta-regression to this question, since there appears to be some relationship with the frequency with which patients are put on a ventilator (as a surrogate for the severity of infection).
+
