@@ -113,6 +113,14 @@ pvalues2 <- hosp_data_lupus %>% mutate(pred_gbm = pred_gbm, pred_rf=pred_rf,
   mutate(pval1 = map_dbl(data, ~binom.test(.$dead, .$admissions, p = .$pred_gbm, alternative='greater')$p.value),
          pval2 = map_dbl(data, ~binom.test(.$dead, .$admissions, p = .$pred_rf, alternative = 'greater')$p.value),
          pval3 = map_dbl(data, ~binom.test(.$dead, .$admissions, p = .$pred_gamloess, alternative='greater')$p.value)) %>% 
-  select(-data)
+  dplyr::select(hospid, pval1:pval3)
 ## This method doesn't take into account the different hospital sizes in the prediction process, 
-## i.e., it won't account for the relative precisions of each estimate.
+## i.e., it won't account for the relative precisions of each estimate. Debating whether to do this
+## or not
+
+
+# SMR-based approach ------------------------------------------------------
+
+SMR <- hosp_data_lupus %>% mutate(pred_gbm = pred_gbm, pred_rf = pred_rf, pred_gamloess = pred_gamloess) %>% 
+  mutate(expect1 = pred_gbm * admissions, expect2 = pred_rf * admissions, expect3 = pred_gamloess*admissions) %>% 
+  mutate(smr1 = dead/expect1, smr2 = dead/expect2, smr3 = dead/expect3)
