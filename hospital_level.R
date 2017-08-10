@@ -73,3 +73,46 @@ g2 <- ggplot(hosp_data, aes(nonlupus_vent, nonlupus_mortality))+
 plot_grid(g1, g2, nrow=1, align = 'v', labels = c('Lupus','Non-lupus'), hjust = -1.5)
 
 ggplot(hosp_data, aes(nonlupus_vent, lupus_vent))+geom_point() + geom_smooth() + geom_abline()
+
+
+
+# Modeling mortality rate incorporating all factors -----------------------
+
+## A ML approach
+
+hosp_data_lupus <- hosp_data %>% select(hospid, teach, highvolume, bedsize,
+                                        hosp_region, starts_with('lupus')) %>% 
+  set_names(str_replace(names(.), 'lupus_',''))
+hosp_data_nonlupus <- hosp_data %>% select(hospid, teach, highvolume, bedsize,
+                                           hosp_region, starts_with('nonlupus')) %>% 
+  set_names(str_replace(names(.), 'nonlupus_',''))
+  
+library(caret)
+set.seed(3028)
+
+fitControl <- trainControl(method = 'repeatedcv',
+                           number = 10, 
+                           repeats = 10)
+gbmfit <- train(mortality ~ teach + highvolume + bedsize + hosp_region + vent, 
+                data=hosp_data_nonlupus, method='gbm', trControl = fitControl)
+rffit <- randomForest(mortality~ teach + highvolume + bedsize + hosp_region + vent, 
+                      data = hosp_data_nonlupus)
+bridgefit <- train(mortality ~ teach + highvolume + bedsize + hosp_region + vent, 
+                     data=hosp_data_nonlupus, method='bridge', trControl = fitControl)
+gamloessfit <- train(mortality ~ teach + highvolume + bedsize + hosp_region + vent, 
+                   data=hosp_data_nonlupus, method='gamLoess', trControl = fitControl)
+
+pred_gbm <- predict(gbmfit, newdata = hosp_data_lupus)
+pred_rf <- predict(rffit, newdata = hosp_data_lupus)
+pred_bridge = predict(bridgefit, newdata= hosp_data_lupus)
+pred_gamloess <- predict(gamloessfit, newdata = hosp_data_lupus)
+
+pvalues2 <- hosp_data_lupus %>% mutate(pred_gbm = pred_gbm, pred_rf=pred_rf,
+                                       pred_gamloess = pred_gamloess) %>% 
+  nest(-hospid) %>% 
+  mutate(pval1 = map_dbl(data, ~binom.test(.$dead, .$admissions, p = .$pred_gbm, alternative='greater')$p.value),
+         pval2 = map_dbl(data, ~binom.test(.$dead, .$admissions, p = .$pred_rf, alternative = 'greater')$p.value),
+         pval3 = map_dbl(data, ~binom.test(.$dead, .$admissions, p = .$pred_gamloess, alternative='greater')$p.value)) %>% 
+  select(-data)
+## This method doesn't take into account the different hospital sizes in the prediction process, 
+## i.e., it won't account for the relative precisions of each estimate.
