@@ -50,3 +50,26 @@ ggplot(bl_dead, aes(lupus_mort_v, nonlupus_mort_v))+geom_point()+
   geom_abline()
 ggplot(bl_dead, aes(lupus_mort_nv, nonlupus_mort_nv))+geom_point()+
   geom_abline()
+
+
+# P-value approach --------------------------------------------------------
+
+## We can get p-values testing the hypothesis that the mortality rate among lupus patients is higher
+## than among non-lupus patients
+
+hosp_data %>% nest(-hospid) %>% 
+  mutate(pval = map_dbl(data, ~binom.test(.$lupus_dead, .$lupus_admissions, .$nonlupus_mortality, 
+                                      alternative='greater')$p.value)) %>% 
+  select(-data) -> pvalues
+
+## An issue here is that this approach doesn't deal with the different levels of ventilator use
+
+g1 <- ggplot(hosp_data, aes(lupus_vent, lupus_mortality))+
+  geom_point()+ geom_abline()+ geom_smooth()+ ylim(0,0.7)+
+  labs(x = 'Proportion on ventilator', y = 'Mortality rate')
+g2 <- ggplot(hosp_data, aes(nonlupus_vent, nonlupus_mortality))+
+  geom_point() + geom_abline() + geom_smooth()+ ylim(0,0.7)+
+  labs(x = 'Proportion on ventilator', y = 'Mortality rate')
+plot_grid(g1, g2, nrow=1, align = 'v', labels = c('Lupus','Non-lupus'), hjust = -1.5)
+
+ggplot(hosp_data, aes(nonlupus_vent, lupus_vent))+geom_point() + geom_smooth() + geom_abline()
