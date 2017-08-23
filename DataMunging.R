@@ -51,8 +51,10 @@ hosp_data <- nonlupus_data %>%
   # select(-lupus_admissions, -nonlupus_admissions)
 
 common_names <- intersect(names(lupus_data), names(nonlupus_data))
+common_hosp <- intersect(lupus_data$hospid, nonlupus_data$hospid)
 
-all_data <- rbind(lupus_data[,common_names], nonlupus_data[,common_names]) # There is already a lupus variable
+all_data <- rbind(lupus_data %>% filter(hospid %in% common_hosp) %>% select(common_names),
+                  nonlupus_data %>% filter(hospid %in% common_hosp) %>% select(common_names))
 
 save(lupus_data, lupus_data_10, nonlupus_data, hosp_data, all_data,
      file = file.path(datadir,'data','rda','data.rda'), 
