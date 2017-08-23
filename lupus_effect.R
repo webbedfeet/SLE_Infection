@@ -3,39 +3,40 @@
 source('lib/reload.R'); reload()
 load(file.path(datadir, 'data','rda','data.rda'))
 
+fn_odds_ratio <- function(d){
+  counts = d %>% count(dead, lupus)
+  n = counts$n
+  if(length(n) < 4) return(NA)
+  return(n[1]*n[4]/n[2]/n[3])
+}
 # No pooling model --------------------------------------------------------
 
-all_data %>% select(dead, hospid,lupus, agecat, payer, elix_score, ventilator, year) %>% 
+## No adjustment
+
+mod_nopool <- all_data %>% select(dead, hospid, lupus) %>% 
+  mutate(lupus = as.factor(lupus),
+         dead = as.factor(dead)) %>% 
   nest(-hospid) %>% 
-  mutate(nlevel_agecat = map_int(data, ~length(unique(.$agecat))),
-         nlevel_payer = map_int(data, ~length(unique(.$payer))),
-         nlevel_year = map_int(data, ~length(unique(.$year))),
-         nlevel_lupus = map_int(data, ~length(unique(.$lupus)))) %>% 
-  select(-data) -> descr
+  mutate(mod = map(data, ~glm(dead~lupus, data=., family = binomial())),
+         lupus_logodds = map_dbl(mod, ~tidy(.)[2,2]))
 
-tst <- all_data %>% nest(-hospid) %>% 
-  mutate(n_year = map_int(data, ~length(unique(.$year)))) %>% 
-  filter(n_year > 1) %>% 
-  select(-n_year) %>% 
-  unnest() %>% mutate(hospid = as.character(hospid)) %>% 
-  split(.$hospid)
+all_data %>% select(dead, lupus, hospid) %>% 
+  nest(-hospid) %>% 
+  mutate(odds_ratio = map_dbl(data, fn_odds_ratio)) -> OR
 
-for(h in names(tst)){
-  print(h)
-  try(glm(dead ~ lupus + agecat + elix_score + ventilator+year, 
-          data = tst[[h]], 
-          family = binomial()))
+
+myglm = function(d){
+  glm(dead ~lupus * ventilator, data = d, family = binomial())
 }
-model_no_pooling <- all_data %>% 
-  mutate(ventilator = as.numeric(as.character(ventilator))) %>% 
+
+possibly_glm = possibly(myglm, otherwise = NA)
+
+all_data %>% select(dead, lupus, ventilator, hospid) %>% 
   nest(-hospid) %>% 
-  mutate(nlevel_year = map_int(data, ~length(unique(.$year))),
-         nlevel_lupus = map_int(data, ~length(unique(.$lupus)))) %>% 
-  filter(nlevel_year > 1, nlevel_lupus > 1) %>% 
-  mutate(mod = map(data, ~glm(dead~ lupus + 
-                                agecat +  elix_score + 
-                                ventilator + year, 
-                              data = ., 
-                              family = binomial())))
+  mutate(mods = map(data, possibly_glm)) %>% 
+  mutate(res = map(mods, tidy)) -> bl
+
+
+
 
 
