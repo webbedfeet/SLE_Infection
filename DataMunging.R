@@ -52,7 +52,7 @@ hosp_data <- nonlupus_data %>%
 
 common_names <- intersect(names(lupus_data), names(nonlupus_data))
 
-all_data <- rbind(lupus_data[,common_names], nonlupus_data[,common_names]) 
+all_data <- rbind(lupus_data[,common_names], nonlupus_data[,common_names]) # There is already a lupus variable
 
 save(lupus_data, lupus_data_10, nonlupus_data, hosp_data, all_data,
      file = file.path(datadir,'data','rda','data.rda'), 
