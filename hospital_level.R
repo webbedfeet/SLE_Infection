@@ -95,7 +95,7 @@ fitControl <- trainControl(method = 'repeatedcv',
                            repeats = 10)
 gbmfit <- train(mortality ~ teach + highvolume + bedsize + hosp_region + vent, 
                 data=hosp_data_nonlupus, method='gbm', trControl = fitControl)
-rffit <- randomForest(mortality~ teach + highvolume + bedsize + hosp_region + vent, 
+rffit <- randomForest::randomForest(mortality~ teach + highvolume + bedsize + hosp_region + vent, 
                       data = hosp_data_nonlupus)
 bridgefit <- train(mortality ~ teach + highvolume + bedsize + hosp_region + vent, 
                      data=hosp_data_nonlupus, method='bridge', trControl = fitControl)
@@ -124,3 +124,16 @@ pvalues2 <- hosp_data_lupus %>% mutate(pred_gbm = pred_gbm, pred_rf=pred_rf,
 SMR <- hosp_data_lupus %>% mutate(pred_gbm = pred_gbm, pred_rf = pred_rf, pred_gamloess = pred_gamloess) %>% 
   mutate(expect1 = pred_gbm * admissions, expect2 = pred_rf * admissions, expect3 = pred_gamloess*admissions) %>% 
   mutate(smr1 = dead/expect1, smr2 = dead/expect2, smr3 = dead/expect3)
+
+
+
+# More modeling taking frequencies into account ---------------------------
+
+objControl <- trainControl(method='cv', number = 3, returnResamp='none')
+trainDF <- hosp_data_nonlupus %>% 
+  mutate(alive = admissions - dead) %>% 
+  mutate_at(vars(teach, highvolume, bedsize, hosp_region), as.factor) %>% 
+  dplyr::select(teach:hosp_region, vent, alive, dead)
+
+objModel <- train(hosp_data_nonlupus[,-c('alive','dead')], trainDF[,c('alive','dead')], 
+                  method='glmnet', metric = 'ROC', trControl=objControl)
