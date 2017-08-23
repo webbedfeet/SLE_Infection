@@ -49,9 +49,11 @@ hosp_data <- nonlupus_data %>%
   mutate(total_admissions = lupus_admissions + nonlupus_admissions,
          prop_lupus = lupus_admissions / total_admissions)# %>% 
   # select(-lupus_admissions, -nonlupus_admissions)
-            
-            
 
-save(lupus_data, lupus_data_10, nonlupus_data, hosp_data,
+common_names <- intersect(names(lupus_data), names(nonlupus_data))
+
+all_data <- rbind(lupus_data[,common_names], nonlupus_data[,common_names]) 
+
+save(lupus_data, lupus_data_10, nonlupus_data, hosp_data, all_data,
      file = file.path(datadir,'data','rda','data.rda'), 
      compress = T)
