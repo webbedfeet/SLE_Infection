@@ -11,6 +11,11 @@ fn_odds_ratio <- function(d){
 }
 # No pooling model --------------------------------------------------------
 
+## Empirical estimates
+
+all_data %>% group_by(hospid, lupus) %>% summarise(death_rate = mean(dead)) -> bl
+
+bl %>% spread(lupus)
 ## No adjustment
 
 mod_nopool <- all_data %>% select(dead, hospid, lupus) %>% 
