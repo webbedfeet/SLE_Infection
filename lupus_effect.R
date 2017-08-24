@@ -38,5 +38,9 @@ all_data %>% select(dead, lupus, ventilator, hospid) %>%
 
 
 
+# Partial pooling ---------------------------------------------------------
 
+mod_partial <- glmer(dead ~ (1+lupus|hospid), data=all_data,
+                          family = binomial)
+next_mod <- sampling(mod_partial, iter = 2000)
 
