@@ -11,11 +11,12 @@ fn_odds_ratio <- function(d){
 }
 # No pooling model --------------------------------------------------------
 
-## Empirical estimates
 
-all_data %>% group_by(hospid, lupus) %>% summarise(death_rate = mean(dead)) -> bl
+## Empirical odds ratios
 
-bl %>% spread(lupus)
+all_data %>% nest(-hospid) %>% 
+  mutate(N = map_int(data, ~nrow(count(dead, lupus)))) %>% 
+  select(hospid, N) -> counts
 ## No adjustment
 
 mod_nopool <- all_data %>% select(dead, hospid, lupus) %>% 
@@ -45,7 +46,7 @@ all_data %>% select(dead, lupus, ventilator, hospid) %>%
 
 # Partial pooling ---------------------------------------------------------
 
-mod_partial <- glmer(dead ~ (1+lupus|hospid), data=all_data,
+mod_partial <- glmer(dead ~ (lupus|hospid), data=all_data,
                           family = binomial)
 next_mod <- sampling(mod_partial, iter = 2000)
 
