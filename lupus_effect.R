@@ -240,6 +240,18 @@ ggplot(predcal_summ, aes(predcutnum, m, ymin=ymin, ymax=ymax))+
                      labels = levels(predcal$predcut)) +
   ylab('Observed proportion in lupus patients')
 
+bad_hosp <- oe_overall %>% mutate(hospid = as.character(hospid)) %>% 
+  filter(oe_ratio > 2) %>% 
+  pull(hospid)
+
+all_data <- all_data %>% mutate(bad_ind = hospid %in% bad_hosp,
+                                hospid = as.character(hospid))
+hosp_data <- all_data %>% select(hospid, bad_ind,  
+                                 northeast, midwest, south, west, rural, 
+                                 smallurban, largeurban) %>% 
+  distinct()
+dim(hosp_data)
+###############################################################################
 ## Predict by hospital
 
 all_data_split<- all_data %>% mutate(hospid = as.character(hospid)) %>% 
@@ -275,4 +287,5 @@ obs_exp <- obs_exp %>% mutate(oe_ratio = obs/expect, log_oe = log(oe_ratio))
 ggplot(obs_exp, aes(oe_ratio))+geom_histogram()
 ggplot(obs_exp, aes(oe_ratio)) + geom_density() + geom_rug()
 
+saveRDS(all_data, file = 'data/all_data.rds')
 save(obs_exp, oe_overall, mod_ppool, all_data, file = 'data/lupuseffect.rda')
