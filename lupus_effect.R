@@ -14,13 +14,9 @@ fn_odds_ratio <- function(d){
 
 ## Empirical odds ratios
 
-<<<<<<< HEAD
-bl %>% spread(lupus, death_rate)
-=======
 all_data %>% nest(-hospid) %>% 
   mutate(N = map_int(data, ~nrow(count(dead, lupus)))) %>% 
   select(hospid, N) -> counts
->>>>>>> e15ee7d9cce722374888a392d28c33a729ecc9f2
 ## No adjustment
 
 mod_nopool <- all_data %>% select(dead, hospid, lupus, agecat) %>% 
@@ -192,13 +188,15 @@ ggplot(predcal_summ, aes(pcutnum, m, ymin=ymin, ymax=ymax))+
 
 ## overall model
 train_set <- all_data %>% filter(lupus == 0) %>% 
-  select(dead, agecat, lupus, ventilator, slecomb, male, 
+  select(dead, agecat, lupus, ventilator, elix_score, male, 
+         medicare, medicaid, private, otherins,
           hospid) %>% 
   model.matrix(~.-1, data=.)
 dtrain = xgb.DMatrix(train_set[,-1], label = train_set[,1])
 test_set <- all_data %>% filter(lupus == 1) %>% 
-  select(dead, agecat, lupus, ventilator, slecomb, male, 
-          hospid) %>% 
+  select(dead, agecat, lupus, ventilator, elix_score, male, 
+         medicare, medicaid, private, otherins,
+         hospid) %>% 
   model.matrix(~.-1, data=.)
 dtest = xgb.DMatrix(test_set[,-1], label = test_set[,1])
 params <- list('eta' = 0.3,
@@ -222,9 +220,12 @@ ggplot(oe_overall, aes(oe_ratio))+
   geom_vline(xintercept = 1) +
   xlab('Observed/Expected ratio by hospital')
 
+mean(oe_overall$oe_ratio > 5)
+
 predcal <- tibble(pred = pred1, dead = test_set[,'dead']) %>% 
-  mutate(predcut = cut(pred, seq(0,.8,.1), include.lowest = T),
-         predcutnum = ((as.numeric(predcut)-0.5)/10))
+  mutate(predcut = cut(pred, c(seq(0,.6,.1),.8), include.lowest = T),
+         predcutnum = ((as.numeric(predcut)-0.5)/10),
+         predcutnum = ifelse(predcutnum==.65, .7, predcutnum))
 predcal_summ <- predcal %>% group_by(predcutnum) %>% 
   summarize(m = mean(dead),
             n = n(),
@@ -233,7 +234,11 @@ predcal_summ <- predcal %>% group_by(predcutnum) %>%
             ymax = m + 2*se)
 ggplot(predcal_summ, aes(predcutnum, m, ymin=ymin, ymax=ymax))+
   geom_pointrange()+
-  geom_abline(linetype=2)
+  geom_abline(linetype=2) +
+  scale_x_continuous('Predicted probability',
+                     breaks = sort(unique(predcal$predcutnum)),
+                     labels = levels(predcal$predcut)) +
+  ylab('Observed proportion in lupus patients')
 
 ## Predict by hospital
 
