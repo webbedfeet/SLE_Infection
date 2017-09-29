@@ -7,6 +7,7 @@ pkgs <- c(
   'cowplot',
   'haven',
   'randomForest',
+  'xgboost',
   'caret',
   'rstan',
   'rstanarm',
