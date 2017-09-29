@@ -240,6 +240,9 @@ ggplot(predcal_summ, aes(predcutnum, m, ymin=ymin, ymax=ymax))+
                      labels = levels(predcal$predcut)) +
   ylab('Observed proportion in lupus patients')
 
+
+# Characterizing bad hospitals --------------------------------------------
+
 bad_hosp <- oe_overall %>% mutate(hospid = as.character(hospid)) %>% 
   filter(oe_ratio > 2) %>% 
   pull(hospid)
