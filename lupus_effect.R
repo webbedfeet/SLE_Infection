@@ -75,60 +75,60 @@ next_mod <- sampling(mod_partial, iter = 2000)
 
 # Using ML to get to predicted probability of death -----------------------
 
-library(randomForest)
-
-train_set <- all_data %>% filter(lupus == 0) %>% 
-  select(dead, ventilator, agecat, slecomb, male, zipinc_qrtl) %>% 
-  filter(complete.cases(.))
-
-rfor_train <- randomForest(dead ~ ventilator + agecat + 
-                             slecomb + male + zipinc_qrtl, 
-                           data =train_set, 
-                           importance=TRUE)
-
-test_set <- filter(all_data, lupus == 1)
-predicted_death = predict(rfor_train, 
-                          newdata = filter(all_data, lupus==1))
-
-bl <- cbind(filter(all_data, lupus == 1), 'pred' = predicted_death) 
-bl <- bl %>% select(agecat, dead, lupus, male, pred, hospid) %>% 
-  filter(!is.na(pred))
-bl <- bl %>% mutate(pred_cut = cut(pred, seq(0,0.5,0.1), include.lowest = TRUE),
-                    pred_cutpt = ((as.numeric(pred_cut)-0.5)/10))
-bl %>% group_by(pred_cutpt) %>% summarise(m = mean(dead), 
-                                          n = n(),
-                                          se = sqrt(m*(1-m)/n),
-                                          ymin = m - 2*se,
-                                          ymax = m + 2*se) %>% 
-  ggplot(aes(pred_cutpt, m, ymin = ymin, ymax = ymax))+
-  geom_pointrange()+geom_abline(linetype=2)+
-  xlab('Predicted probability of death')+
-  ylab('Observed proportion of death')+
-  scale_x_continuous(breaks = seq(0.05, 0.45, by=0.1), 
-                     labels = levels(bl$pred_cut))
-
-bl2 <- bl %>% group_by(hospid) %>% summarize(m = mean(dead), p = mean(pred), chi = sum(dead)/sum(pred))
-
-
-## Calibration
-
-out <- tibble(p = predict(rfor_train), dead = train_set$dead)
-p = predict(rfor_train)
-dead = train_set$dead
-
-cal_data <- tibble(p = p, dead = dead)
-cal_data <- cal_data %>% mutate(p_cut = cut(p, seq(0,.5,.1), include.lowest = T),
-                                p_cutnum = ((as.numeric(p_cut)-0.5)/10))
-
-cal_data_summ <- cal_data %>% group_by(p_cutnum) %>% 
-  summarize(m = mean(dead),
-            n = n(),
-            se = sqrt(m*(1-m)/n),
-            ymin = m - 2*se,
-            ymax = m + 2*se)
-ggplot(cal_data_summ, aes(x=p_cutnum, y = m, ymin=ymin, ymax=ymax))+
-  geom_pointrange()+
-  geom_abline(linetype=2)
+# library(randomForest)
+# 
+# train_set <- all_data %>% filter(lupus == 0) %>% 
+#   select(dead, ventilator, agecat, slecomb, male, zipinc_qrtl) %>% 
+#   filter(complete.cases(.))
+# 
+# rfor_train <- randomForest(dead ~ ventilator + agecat + 
+#                              slecomb + male + zipinc_qrtl, 
+#                            data =train_set, 
+#                            importance=TRUE)
+# 
+# test_set <- filter(all_data, lupus == 1)
+# predicted_death = predict(rfor_train, 
+#                           newdata = filter(all_data, lupus==1))
+# 
+# bl <- cbind(filter(all_data, lupus == 1), 'pred' = predicted_death) 
+# bl <- bl %>% select(agecat, dead, lupus, male, pred, hospid) %>% 
+#   filter(!is.na(pred))
+# bl <- bl %>% mutate(pred_cut = cut(pred, seq(0,0.5,0.1), include.lowest = TRUE),
+#                     pred_cutpt = ((as.numeric(pred_cut)-0.5)/10))
+# bl %>% group_by(pred_cutpt) %>% summarise(m = mean(dead), 
+#                                           n = n(),
+#                                           se = sqrt(m*(1-m)/n),
+#                                           ymin = m - 2*se,
+#                                           ymax = m + 2*se) %>% 
+#   ggplot(aes(pred_cutpt, m, ymin = ymin, ymax = ymax))+
+#   geom_pointrange()+geom_abline(linetype=2)+
+#   xlab('Predicted probability of death')+
+#   ylab('Observed proportion of death')+
+#   scale_x_continuous(breaks = seq(0.05, 0.45, by=0.1), 
+#                      labels = levels(bl$pred_cut))
+# 
+# bl2 <- bl %>% group_by(hospid) %>% summarize(m = mean(dead), p = mean(pred), chi = sum(dead)/sum(pred))
+# 
+# 
+# ## Calibration
+# 
+# out <- tibble(p = predict(rfor_train), dead = train_set$dead)
+# p = predict(rfor_train)
+# dead = train_set$dead
+# 
+# cal_data <- tibble(p = p, dead = dead)
+# cal_data <- cal_data %>% mutate(p_cut = cut(p, seq(0,.5,.1), include.lowest = T),
+#                                 p_cutnum = ((as.numeric(p_cut)-0.5)/10))
+# 
+# cal_data_summ <- cal_data %>% group_by(p_cutnum) %>% 
+#   summarize(m = mean(dead),
+#             n = n(),
+#             se = sqrt(m*(1-m)/n),
+#             ymin = m - 2*se,
+#             ymax = m + 2*se)
+# ggplot(cal_data_summ, aes(x=p_cutnum, y = m, ymin=ymin, ymax=ymax))+
+#   geom_pointrange()+
+#   geom_abline(linetype=2)
 
 library(xgboost)
 
@@ -187,6 +187,7 @@ ggplot(predcal_summ, aes(pcutnum, m, ymin=ymin, ymax=ymax))+
 # by hospital -------------------------------------------------------------
 
 ## overall model
+all_data <- readRDS('data/all_data.rds')
 train_set <- all_data %>% filter(lupus == 0) %>% 
   select(dead, agecat, lupus, ventilator, elix_score, male, 
          medicare, medicaid, private, otherins,
@@ -204,6 +205,7 @@ params <- list('eta' = 0.3,
                'early_stopping_rounds' = 5
 )
 xgbmodel1 = xgb.train(params, dtrain, nrounds = 20) # Includes hospitals
+saveRDS(xgbmodel1, file = 'data/xgb_trained.rds')
 pred1 <- predict(xgbmodel1, dtest)
 
 bl <- all_data %>% filter(lupus == 1)
@@ -219,8 +221,6 @@ ggplot(oe_overall, aes(oe_ratio))+
   geom_histogram(binwidth=0.3)+
   geom_vline(xintercept = 1) +
   xlab('Observed/Expected ratio by hospital')
-
-mean(oe_overall$oe_ratio > 5)
 
 predcal <- tibble(pred = pred1, dead = test_set[,'dead']) %>% 
   mutate(predcut = cut(pred, c(seq(0,.6,.1),.8), include.lowest = T),
@@ -246,11 +246,34 @@ bad_hosp <- oe_overall %>% mutate(hospid = as.character(hospid)) %>%
 
 all_data <- all_data %>% mutate(bad_ind = hospid %in% bad_hosp,
                                 hospid = as.character(hospid))
-hosp_data <- all_data %>% select(hospid, bad_ind,  
+hosp_data <- all_data %>% select(hospid, bad_ind, highvolume, bedsize, teach, 
                                  northeast, midwest, south, west, rural, 
-                                 smallurban, largeurban) %>% 
-  distinct()
-dim(hosp_data)
+                                 smallurban, largeurban)
+
+highvol <- all_data %>% group_by(hospid) %>% 
+  summarize(new_highvolume = round(mean(highvolume[lupus==1], na.rm=T)))
+bed <- all_data %>% group_by(hospid) %>% 
+  summarize(new_bedsize = round(mean(bedsize[lupus == 1], na.rm = T)))
+
+teach = all_data %>% group_by(hospid) %>% 
+  summarize(new_teach = round(mean(teach[lupus == 1], na.rm = T)))
+
+hosp_data <- hosp_data %>% left_join(highvol) %>% 
+  left_join(bed) %>% 
+  left_join(teach) %>% 
+  select(hospid, bad_ind, northeast:west, new_highvolume:new_teach) %>% 
+  distinct() %>% 
+  mutate(new_bedsize = as.factor(new_bedsize),
+         new_bedsize = as.factor(new_bedsize),
+         new_teach = as.factor(new_teach))
+
+hosp_data %>% crosstab(new_bedsize, bad_ind, percent='row')
+hosp_data %>% crosstab(new_teach, bad_ind, percent='row')
+
+hosp_data %>% mutate(region = northeast + 2 * midwest + 3 * south + 4 * west,
+                     region = factor(region, labels = c('northeast','midwest',
+                                                        'south','west'))) %>% 
+  crosstab(region, bad_ind, percent = 'row')
 ###############################################################################
 ## Predict by hospital
 
