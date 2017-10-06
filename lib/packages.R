@@ -9,7 +9,8 @@ pkgs <- c(
   'janitor', # for crosstab
   'randomForest',
   'xgboost',
-  'caret',
+  'rpart',
+  'rpart.plot',
   'rstan',
   'rstanarm',
   'lme4',
