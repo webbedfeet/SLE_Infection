@@ -335,4 +335,4 @@ ggplot(obs_exp, aes(oe_ratio))+geom_histogram()
 ggplot(obs_exp, aes(oe_ratio)) + geom_density() + geom_rug()
 
 saveRDS(all_data, file = 'data/all_data.rds')
-save(obs_exp, oe_overall, mod_ppool, all_data, file = 'data/lupuseffect.rda')
+save(obs_exp, hosp_data,oe_overall, mod_ppool, all_data, file = 'data/lupuseffect.rda')
