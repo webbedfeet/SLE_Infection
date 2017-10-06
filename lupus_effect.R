@@ -304,6 +304,7 @@ load('data/lupuseffect.rda')
 death_rate <- all_data %>% group_by(hospid) %>% summarize(rate = mean(dead))
 lupus <- all_data %>% group_by(hospid) %>% summarise(n_lupus = sum(lupus))
 hosp_data <- hosp_data %>% left_join(death_rate) %>% left_join(lupus) %>% left_join(oe_overall)
+saveRDS(hosp_data, file='data/hosp_data.rds')
 
 dat_for_plot <- hosp_data %>% select(hospid, rate, n_lupus) 
 ggplot(dat_for_plot, aes(rate, oe_ratio))+geom_point(aes(size=n_lupus)) +
@@ -317,6 +318,12 @@ ggplot(dat_for_plot, aes(rate, oe_ratio))+geom_point(aes(size=n_lupus)) +
 
 ## Categorize hospitals
 
+hosp_data <- hosp_data %>% mutate(smr_cat = ifelse(oe_ratio >=2, 'high relative','low relative'),
+                                  death_cat = ifelse(rate >= median(rate), 'high absolute','low absolute'),
+                                  categories = factor(paste(smr_cat, death_cat, sep=', ')))
+
+rpart(categories ~ new_highvolume + new_bedsize+ new_teach + region,
+      data = hosp_data, control = rpart.control(minsplit=10) )
 
 ###############################################################################
 ## Predict by hospital
