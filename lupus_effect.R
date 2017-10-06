@@ -298,6 +298,23 @@ tree <- rpart(bad_ind~ `SLE Experience` + Bedsize+ new_teach + Region,
               data=dat_rplot, control = rpart.control(minsplit=10))
 rpart.plot(tree, type=4, extra = 1, box.palette='Greys')
 
+load('data/lupuseffect.rda')
+
+## Creating an SMR/death rate plot
+death_rate <- all_data %>% group_by(hospid) %>% summarize(rate = mean(dead))
+lupus <- all_data %>% group_by(hospid) %>% summarise(n_lupus = sum(lupus))
+hosp_data <- hosp_data %>% left_join(death_rate) %>% left_join(lupus)
+
+dat_for_plot <- hosp_data %>% select(hospid, rate, n_lupus) %>% left_join(oe_overall)
+ggplot(dat_for_plot, aes(rate, oe_ratio))+geom_point(aes(size=n_lupus)) +
+  geom_hline(yintercept = 2, linetype=2) +
+  geom_vline(aes(xintercept = median(rate)), linetype=2)+
+  scale_x_continuous('Death rate', 
+                     breaks = c(.1, .2, .3, median(hosp_data$rate)),
+                     labels = c('10%','20%','30%', 'Median')) + 
+  scale_y_continuous('SMR for lupus', breaks = seq(0,10,by  =2)) + 
+  scale_size_continuous('# SLE', breaks =c(10,20,40,60))
+
 ###############################################################################
 ## Predict by hospital
 
