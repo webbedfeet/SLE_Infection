@@ -266,17 +266,38 @@ hosp_data <- hosp_data %>% left_join(highvol) %>%
   left_join(teach) %>% 
   select(hospid, bad_ind, northeast:west, new_highvolume:new_teach) %>% 
   distinct() %>% 
-  mutate(new_bedsize = as.factor(new_bedsize),
-         new_bedsize = as.factor(new_bedsize),
-         new_teach = as.factor(new_teach))
+  mutate(new_highvolume = factor(new_highvolume, labels = c('Low','High')),
+         new_bedsize = factor(new_bedsize, labels = c('Small','Medium','Large')),
+         new_teach = factor(new_teach, labels = c('Rural','Urban non-teaching','Urban teaching')),
+         region = factor(northeast + 2 * midwest + 3 * south + 4 * west,
+                         labels = c('northeast','midwest',
+                                    'south','west')))
 
-hosp_data %>% crosstab(new_bedsize, bad_ind, percent='row')
-hosp_data %>% crosstab(new_teach, bad_ind, percent='row')
-
-hosp_data %>% mutate(region = northeast + 2 * midwest + 3 * south + 4 * west,
+list('High Volume' = hosp_data %>% crosstab(new_highvolume, bad_ind, percent='row') %>% 
+     set_names(nm = c('Levels','Good','Bad')),
+'Bedsize' = hosp_data %>% crosstab(new_bedsize, bad_ind, percent='row') %>% 
+        set_names(nm = c('Levels','Good','Bad')),
+'Teach' = hosp_data %>% crosstab(new_teach, bad_ind, percent='row') %>% 
+  set_names(nm = c('Levels','Good','Bad')),
+'Region' = hosp_data %>% mutate(region = northeast + 2 * midwest + 3 * south + 4 * west,
                      region = factor(region, labels = c('northeast','midwest',
                                                         'south','west'))) %>% 
-  crosstab(region, bad_ind, percent = 'row')
+  crosstab(region, bad_ind, percent = 'row') %>% 
+  set_names(nm = 'Levels','Good','Bad')) %>% bind_rows(.id = 'Variable') %>% 
+  mutate(Good = round(100*Good, 2), Bad = round(100*Bad, 2)) %>% 
+  knitr::kable()
+
+library(rpart)
+library(rpart.plot)
+
+dat_rplot <- hosp_data %>% 
+  rename(`SLE Experience` = new_highvolume, Bedsize = new_bedsize, 
+         Region=region)
+levels(dat_rplot$Region) = c('Northeast','Midwest','South','West')
+tree <- rpart(bad_ind~ `SLE Experience` + Bedsize+ new_teach + Region,
+              data=dat_rplot, control = rpart.control(minsplit=10))
+rpart.plot(tree, type=4, extra = 1, box.palette='Greys')
+
 ###############################################################################
 ## Predict by hospital
 

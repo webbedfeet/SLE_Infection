@@ -6,7 +6,7 @@ pkgs <- c(
   'forcats',
   'cowplot',
   'haven',
-  'janitor' # for crosstab
+  'janitor', # for crosstab
   'randomForest',
   'xgboost',
   'caret',
