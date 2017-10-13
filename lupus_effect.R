@@ -130,6 +130,9 @@ next_mod <- sampling(mod_partial, iter = 2000)
 #   geom_pointrange()+
 #   geom_abline(linetype=2)
 
+#' ## Using machine learning methods to estimate the effect of lupus on death risk
+#' 
+#' We consider 
 library(xgboost)
 
 train_set <- train_set %>% select(dead, ventilator, agecat, slecomb, male, zipinc_qrtl)
@@ -202,7 +205,8 @@ test_set <- all_data %>% filter(lupus == 1) %>%
 dtest = xgb.DMatrix(test_set[,-1], label = test_set[,1])
 params <- list('eta' = 0.3,
                'objective'= 'reg:logistic',
-               'early_stopping_rounds' = 5
+               'early_stopping_rounds' = 5,
+               'eval_metric'='error'
 )
 xgbmodel1 = xgb.train(params, dtrain, nrounds = 20) # Includes hospitals
 saveRDS(xgbmodel1, file = 'data/xgb_trained.rds')
@@ -240,6 +244,35 @@ ggplot(predcal_summ, aes(predcutnum, m, ymin=ymin, ymax=ymax))+
                      labels = levels(predcal$predcut)) +
   ylab('Observed proportion in lupus patients')
 
+
+## An alternative model including year of admission
+
+all_data <- readRDS('data/all_data.rds')
+train_set <- all_data %>% filter(lupus == 0) %>% 
+  select(dead, agecat, lupus, ventilator, elix_score, male, 
+         medicare, medicaid, private, otherins,year,
+         hospid) %>% 
+  model.matrix(~.-1, data=.)
+dtrain = xgb.DMatrix(train_set[,-1], label = train_set[,1])
+test_set <- all_data %>% filter(lupus == 1) %>% 
+  select(dead, agecat, lupus, ventilator, elix_score, male, 
+         medicare, medicaid, private, otherins, year, 
+         hospid) %>% 
+  model.matrix(~.-1, data=.)
+dtest = xgb.DMatrix(test_set[,-1], label = test_set[,1])
+params <- list('eta' = 0.3,
+               'max_depth' = 6,
+               'objective'= 'reg:logistic',
+               'eval_metric' = 'auc',
+               'early_stopping_rounds' = 5
+)
+xgbmodel1 = xgb.train(params, dtrain, nrounds = 20,
+                      watchlist = list('validation' = dtest),
+                      early_stopping_rounds = 4) # Includes hospitals
+saveRDS(xgbmodel1, file = 'data/xgb_trained.rds')
+pred1 <- predict(xgbmodel1, dtest)
+
+bl <- all_data %>% filter(lupus == 1)
 
 # Characterizing bad hospitals --------------------------------------------
 
