@@ -31,7 +31,12 @@ by scoring each patient using the model to get a predicted probability of death.
 we then add these predicted probabilities to obtain the expected number of deaths under the assumption
 that the risk for SLE and non-SLE patients are the same. Finally, we compare the observed 
 number of deaths per hospital with the expected number of deaths under the model. Note that the
-expected conditional probabilities of death use information across all hospitals and patients through the XGBoost model. 
+expected conditional probabilities of death use information across all hospitals and patients through the XGBoost model. Also note that, despite the hospitals being sampled from the national 
+population of hospitals under the NIS, our analysis is conditional on the hospitals and patients
+in our dataset and so we do not use the sampling weights provided by NIS in our modeling. 
+
+All analyses were performed using R[^3] version 3.4 along with the packages xgboost[^2], 
+caret[^3] and survey[^5].
 
 [^2]:Tianqi Chen, Tong He, Michael Benesty, Vadim Khotilovich and Yuan
   Tang (2017). xgboost: Extreme Gradient Boosting. R package version
@@ -45,10 +50,13 @@ expected conditional probabilities of death use information across all hospitals
   Lescarbeau, Andrew Ziem, Luca Scrucca, Yuan Tang, Can Candan and
   Tyler Hunt. (2017). caret: Classification and Regression Training.
   R package version 6.0-77. https://CRAN.R-project.org/package=caret
+[^5]: T. Lumley (2017) "survey: analysis of complex survey samples". R
+  package version 3.32.
 
 # Results
 
-Table 1 give
+Table 1 gives the sampling weight adjusted summary statistics for various measurements
+utilized in our analysis. 
 ```{r, results='asis', cap}
 out <- all_data %>% group_by(dead, lupus) %>% 
   summarize(Age = round(mean(age), 2),
