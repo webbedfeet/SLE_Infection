@@ -1,5 +1,6 @@
 ---
-title: "Results"
+title: "Methods and results"
+author: "Abhijit Dasgupta"
 output:
   html_document: default
   word_document: default
@@ -155,7 +156,7 @@ hospital-level characteristics might be predictive of this joint status. We look
 a multiclass decision tree using the CART methodology[^6], as implemented in the R package rpart[^7]. Figure 3 shows the fit decision tree, where the table each node gives the relative frequency of each of the 4 categories of hospitals at that node. We find that SLE experience, i.e. the number of SLE patients seen at the hospital, and region segregate the classes of hospitals best. Hospitals with low SLE experience and low absolute death rates have a 3-fold higher chance of being classified (R high, A low) than hospitals with high SLE volume. Among high SLE experience hospitals, Midwest hospitals are 
 less likely to have a high relative risk due to SLE than the other regions. 
 
-```{r, echo=F, fig.cap = 'Decision tree of hospital status based on absolute and relative risks of death, with hospital characteristics like SLE experience, location, bed size and whether it was a rural or urban hopsital being predictors'}
+```{r, echo=F, fig.cap = 'Figure 3: Decision tree of hospital status based on absolute and relative risks of death, with hospital characteristics like SLE experience, location, bed size and whether it was a rural or urban hopsital being predictors. The tables are in the same orientation as Figure 2'}
 knitr::include_graphics('docs/DTUpdated/Slide1.png')
 ```
 
