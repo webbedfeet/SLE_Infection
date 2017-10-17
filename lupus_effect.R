@@ -191,15 +191,13 @@ all_data <- readRDS('data/all_data.rds')
 train_set <- all_data %>% filter(lupus == 0) %>% 
   select(dead, agecat, lupus, ventilator, elix_score, male, 
          medicare, medicaid, private, otherins,
-          hospid, year) %>% 
-  mutate(year = as.factor(year)) %>% 
+          hospid) %>% 
   model.matrix(~.-1, data=.)
 dtrain = xgb.DMatrix(train_set[,-1], label = train_set[,1])
 test_set <- all_data %>% filter(lupus == 1) %>% 
   select(dead, agecat, lupus, ventilator, elix_score, male, 
          medicare, medicaid, private, otherins,
-         hospid, year) %>% 
-  mutate(year = as.factor(year)) %>% 
+         hospid) %>% 
   model.matrix(~.-1, data=.)
 dtest = xgb.DMatrix(test_set[,-1], label = test_set[,1])
 watchlist = list(train = dtrain,eval=dtest)
@@ -211,6 +209,10 @@ xgbmodel1 = xgb.train(params, dtrain, nrounds = 50, watchlist=watchlist,early_st
 saveRDS(xgbmodel1, file = 'data/xgb_trained.rds') # Test AUC = 0.8625, Train AUC = 0.8423
 xgbmodel1 = readRDS('data/xgb_trained.rds')
 pred1 <- predict(xgbmodel1, dtest)
+
+
+
+## Score and compute obs/expected ratios by hospital
 
 bl <- all_data %>% filter(lupus == 1)
 
@@ -226,24 +228,26 @@ ggplot(oe_overall, aes(oe_ratio))+
   geom_vline(xintercept = 1) +
   xlab('Observed/Expected ratio by hospital')
 
+cuts = c(seq(0.1,.5,.1), .65)
+mids = (cuts[-1]+cuts[-length(cuts)])/2
 predcal <- tibble(pred = pred1, dead = test_set[,'dead']) %>% 
-  mutate(predcut = cut(pred, c(seq(0,.6,.1),.8), include.lowest = T),
-         predcutnum = ((as.numeric(predcut)-0.5)/10),
-         predcutnum = ifelse(predcutnum==.65, .7, predcutnum))
-predcal_summ <- predcal %>% group_by(predcutnum) %>% 
+  mutate(predcut = cut(pred, cuts, include.lowest = T))
+predcal_summ <- predcal %>% group_by(predcut) %>% 
   summarize(m = mean(dead),
             n = n(),
             se = sqrt(m*(1-m)/n),
             ymin = m - 2*se,
-            ymax = m + 2*se)
-ggplot(predcal_summ, aes(predcutnum, m, ymin=ymin, ymax=ymax))+
+            ymax = m + 2*se) %>%
+  mutate(cutnum = mids)
+ggplot(predcal_summ, aes(cutnum, m, ymin=ymin, ymax=ymax))+
   geom_pointrange()+
   geom_abline(linetype=2) +
   scale_x_continuous('Predicted probability',
-                     breaks = sort(unique(predcal$predcutnum)),
-                     labels = levels(predcal$predcut)) +
+                     breaks = predcal_summ$cutnum,
+                     labels = levels(predcal_summ$predcut)) +
   ylab('Observed proportion in lupus patients')
 
+c1=caret::calibration(factor(dead)~pred, data=predcal, cuts=10,class='1')
 
 # Characterizing bad hospitals --------------------------------------------
 
