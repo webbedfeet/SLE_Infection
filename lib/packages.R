@@ -7,6 +7,8 @@ pkgs <- c(
   'cowplot',
   'haven',
   'janitor', # for crosstab
+  'Cairo', # for unicode in ggplot + pdf
+  'survey', # for weighted descriptives
   'randomForest',
   'xgboost',
   'rpart',
