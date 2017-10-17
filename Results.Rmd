@@ -21,7 +21,35 @@ We are interested in discovering if the death risk in individuals admitted with 
 
 We take a counterfactual approach to this problem. We propose to model the risk of death among the non-SLE patients conditional on various covariates including the admission hospital, age, comorbidities, admission on ventilator, gender, and type of insurance. We would then use this model to predict the risk (or probability) of death during hospitalization for each SLE patient using the observed covariates for that patient. This would give the risk of death for that patient under the assumption that they had the same conditional death risk as non-SLE patients. If we add up these predicted probabilities over patients in a hospital, we would get the _expected_ number of deaths (E) among SLE patients under the assumption that they shared the same experience as non-SLE patients. We would compare this with the _observed_ number of deaths (O) among SLE patients at that hospital. The O/E ratio is akin to a standardized mortality rate, where the standardized population would be non-SLE patients with sepsis in the sample. 
 
-```{r, results='asis'}
+In order to flexibly model the conditional risk of death, we use the XGBoost algorithm (Chen, et al, 2016)[^1]. This modern form of gradient boosted trees allows for regularization as well as stochastic
+gradient descent methods to reduce the chance of overfitting, and utilizes decision trees as the 
+learning engine to allow flexible prediction of the outome from heterogeneous responses. For training
+the XGBoost model,we use the R package xgboost [^2], running on R[^3] version 3.4. We 
+train this model on the non-SLE patients,  using 5-fold cross-validation to train the 
+model parameters (using the R package caret[^4]). Our optimal trained model achieved a cross-validated average AUC of 0.86. We then use this trained model to predict the risk of death among SLE patients,
+by scoring each patient using the model to get a predicted probability of death. Within hospital, 
+we then add these predicted probabilities to obtain the expected number of deaths under the assumption
+that the risk for SLE and non-SLE patients are the same. Finally, we compare the observed 
+number of deaths per hospital with the expected number of deaths under the model. Note that the
+expected conditional probabilities of death use information across all hospitals and patients through the XGBoost model. 
+
+[^2]:Tianqi Chen, Tong He, Michael Benesty, Vadim Khotilovich and Yuan
+  Tang (2017). xgboost: Extreme Gradient Boosting. R package version
+  0.6-4. https://CRAN.R-project.org/package=xgboost
+[^3]: R Core Team (2017). R: A language and environment for statistical
+  computing. R Foundation for Statistical Computing, Vienna, Austria.
+  URL https://www.R-project.org/.
+[^4]: Max Kuhn. Contributions from Jed Wing, Steve Weston, Andre
+  Williams, Chris Keefer, Allan Engelhardt, Tony Cooper, Zachary
+  Mayer, Brenton Kenkel, the R Core Team, Michael Benesty, Reynald
+  Lescarbeau, Andrew Ziem, Luca Scrucca, Yuan Tang, Can Candan and
+  Tyler Hunt. (2017). caret: Classification and Regression Training.
+  R package version 6.0-77. https://CRAN.R-project.org/package=caret
+
+# Results
+
+Table 1 give
+```{r, results='asis', cap}
 out <- all_data %>% group_by(dead, lupus) %>% 
   summarize(Age = round(mean(age), 2),
             Female = paste(round(mean(male=='0')*100,2),'%'),
@@ -107,3 +135,5 @@ tree2 <- rpart(categories ~ new_highvolume + new_bedsize+ new_teach + region,
       data = hosp_data, control = rpart.control(minsplit=10) )
 rpart.plot(tree2)```
 
+
+[^1]: Chen, T. and Guestrin, C., 2016, August. Xgboost: A scalable tree boosting system. In Proceedings of the 22nd acm sigkdd international conference on knowledge discovery and data mining (pp. 785-794). ACM.
