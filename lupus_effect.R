@@ -191,47 +191,27 @@ all_data <- readRDS('data/all_data.rds')
 train_set <- all_data %>% filter(lupus == 0) %>% 
   select(dead, agecat, lupus, ventilator, elix_score, male, 
          medicare, medicaid, private, otherins,
-          hospid) %>% 
+          hospid, year) %>% 
+  mutate(year = as.factor(year)) %>% 
   model.matrix(~.-1, data=.)
 dtrain = xgb.DMatrix(train_set[,-1], label = train_set[,1])
 test_set <- all_data %>% filter(lupus == 1) %>% 
   select(dead, agecat, lupus, ventilator, elix_score, male, 
          medicare, medicaid, private, otherins,
-         hospid) %>% 
-  model.matrix(~.-1, data=.)
-dtest = xgb.DMatrix(test_set[,-1], label = test_set[,1])
-params <- list('eta' = 0.3,
-               'objective'= 'reg:logistic',
-               'early_stopping_rounds' = 5
-)
-xgbmodel1 = xgb.train(params, dtrain, nrounds = 20) # Includes hospitals
-saveRDS(xgbmodel1, file = 'data/xgb_trained.rds')
-xgbmodel1 = readRDS('data/xgb_trained.rds')
-pred1 <- predict(xgbmodel1, dtest)
-
-# Try including year
-all_data = readRDS('data/all_data.rds')
-train_set1 <- all_data %>% filter(lupus==0) %>% 
-  select(dead, agecat, lupus, ventilator, elix_score, male, medicare, 
-         medicaid, private, otherins, hospid, year) %>% 
-  mutate(year = as.factor(year)) %>% 
-  model.matrix(~.-1, data=.)
-dtrain1 = xgb.DMatrix(train_set1[,-1], label = train_set1[,1])
-xgbmodel2 = xgb.train(params, dtrain1, nrounds=20)
-test_set1 <- all_data %>% filter(lupus == 1) %>% 
-  select(dead, agecat, lupus, ventilator, elix_score, male, 
-         medicare, medicaid, private, otherins,
          hospid, year) %>% 
   mutate(year = as.factor(year)) %>% 
   model.matrix(~.-1, data=.)
-dtest1 = xgb.DMatrix(test_set1[,-1], label = test_set1[,1])
+dtest = xgb.DMatrix(test_set[,-1], label = test_set[,1])
+watchlist = list(train = dtrain,eval=dtest)
+params <- list('eta' = 0.3,
+               'objective'= 'reg:logistic',
+               'eval_metric' = 'auc'
+)
+xgbmodel1 = xgb.train(params, dtrain, nrounds = 50, watchlist=watchlist,early_stopping_rounds = 3) # Includes hospitals
+saveRDS(xgbmodel1, file = 'data/xgb_trained.rds') # Test AUC = 0.8625, Train AUC = 0.8423
+xgbmodel1 = readRDS('data/xgb_trained.rds')
+pred1 <- predict(xgbmodel1, dtest)
 
-pred2 = predict(xgbmodel2, dtest1)
-
-library(ROCR)
-p = prediction(pred1, labels = test_set1[,1])
-performance(p, measure='auc')@y.values[[1]]
-## Back to original programming
 bl <- all_data %>% filter(lupus == 1)
 
 oe_overall <- bl[as.numeric(row.names(test_set)),] %>% 
