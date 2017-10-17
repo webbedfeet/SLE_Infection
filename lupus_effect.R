@@ -3,73 +3,73 @@
 source('lib/reload.R'); reload()
 load(file.path(datadir, 'data','rda','data.rda'))
 
-fn_odds_ratio <- function(d){
-  counts = d %>% count(dead, lupus)
-  n = counts$n
-  if(length(n) < 4) return(NA)
-  return(n[1]*n[4]/n[2]/n[3])
-}
-# No pooling model --------------------------------------------------------
-
-
-## Empirical odds ratios
-
-all_data %>% nest(-hospid) %>% 
-  mutate(N = map_int(data, ~nrow(count(dead, lupus)))) %>% 
-  select(hospid, N) -> counts
-## No adjustment
-
-mod_nopool <- all_data %>% select(dead, hospid, lupus, agecat) %>% 
-  mutate(lupus = as.factor(lupus),
-         dead = as.factor(dead)) %>% 
-  nest(-hospid) %>% 
-  mutate(mod = map(data, ~glm(dead~lupus + agecat, data=., family = binomial())),
-         lupus_logodds = map_dbl(mod, ~tidy(.)[2,2]))
-
-plausible_OR <- all_data %>% nest(-hospid) %>% 
-  mutate(n = map_int(data, ~nrow(count(., lupus, dead)))) %>% 
-  select(-data) %>% filter(n == 4)
-
-mod_nopool2 <- all_data %>% filter(hospid %in% plausible_OR$hospid) %>% 
-  select(dead, hospid, lupus, agecat, ventilator) %>% 
-  mutate(lupus = as.factor(lupus),
-         dead = as.factor(dead)) %>% 
-  nest(-hospid) %>% 
-  mutate(mod = map(data, ~glm(dead~lupus + agecat, data=., 
-                              family = binomial())),
-         lupus_logOR = map_dbl(mod, ~tidy(.)[2,2]), 
-         empirical_OR = map_dbl(data, fn_odds_ratio),
-         empirical_logOR = log(empirical_OR)) %>% 
-  select(-data, -mod)
-
-mod_nopool2 %>% filter(lupus_logOR < 10) %>% ggplot(aes(lupus_logOR)) + 
-  geom_density()
-
-
-mod_ppool <- glmer(dead ~ lupus + (lupus|hospid) + agecat, 
-                   data = all_data, family = binomial())
-
-ggplot(coef(mod_ppool)$hospid, aes(lupus))+
-  geom_histogram(binwidth=0.05) + 
-  xlab('Log odds ratio for lupus')
-
-mod_ppool2 <- glmer(dead ~ lupus + ventilator + 
-                      (lupus * ventilator|hospid) + agecat, 
-                    data=all_data, family=binomial())
-
-
-all_data %>% select(dead, lupus, hospid) %>% 
-  nest(-hospid) %>% 
-  mutate(odds_ratio = map_dbl(data, fn_odds_ratio)) -> OR
-
-
-
-
-# Partial pooling ---------------------------------------------------------
-
-mod_partial <- glmer(dead ~ (lupus|hospid), data=all_data,
-                          family = binomial)
-next_mod <- sampling(mod_partial, iter = 2000)
+# fn_odds_ratio <- function(d){
+#   counts = d %>% count(dead, lupus)
+#   n = counts$n
+#   if(length(n) < 4) return(NA)
+#   return(n[1]*n[4]/n[2]/n[3])
+# }
+# # No pooling model --------------------------------------------------------
+# 
+# 
+# ## Empirical odds ratios
+# 
+# all_data %>% nest(-hospid) %>% 
+#   mutate(N = map_int(data, ~nrow(count(dead, lupus)))) %>% 
+#   select(hospid, N) -> counts
+# ## No adjustment
+# 
+# mod_nopool <- all_data %>% select(dead, hospid, lupus, agecat) %>% 
+#   mutate(lupus = as.factor(lupus),
+#          dead = as.factor(dead)) %>% 
+#   nest(-hospid) %>% 
+#   mutate(mod = map(data, ~glm(dead~lupus + agecat, data=., family = binomial())),
+#          lupus_logodds = map_dbl(mod, ~tidy(.)[2,2]))
+# 
+# plausible_OR <- all_data %>% nest(-hospid) %>% 
+#   mutate(n = map_int(data, ~nrow(count(., lupus, dead)))) %>% 
+#   select(-data) %>% filter(n == 4)
+# 
+# mod_nopool2 <- all_data %>% filter(hospid %in% plausible_OR$hospid) %>% 
+#   select(dead, hospid, lupus, agecat, ventilator) %>% 
+#   mutate(lupus = as.factor(lupus),
+#          dead = as.factor(dead)) %>% 
+#   nest(-hospid) %>% 
+#   mutate(mod = map(data, ~glm(dead~lupus + agecat, data=., 
+#                               family = binomial())),
+#          lupus_logOR = map_dbl(mod, ~tidy(.)[2,2]), 
+#          empirical_OR = map_dbl(data, fn_odds_ratio),
+#          empirical_logOR = log(empirical_OR)) %>% 
+#   select(-data, -mod)
+# 
+# mod_nopool2 %>% filter(lupus_logOR < 10) %>% ggplot(aes(lupus_logOR)) + 
+#   geom_density()
+# 
+# 
+# mod_ppool <- glmer(dead ~ lupus + (lupus|hospid) + agecat, 
+#                    data = all_data, family = binomial())
+# 
+# ggplot(coef(mod_ppool)$hospid, aes(lupus))+
+#   geom_histogram(binwidth=0.05) + 
+#   xlab('Log odds ratio for lupus')
+# 
+# mod_ppool2 <- glmer(dead ~ lupus + ventilator + 
+#                       (lupus * ventilator|hospid) + agecat, 
+#                     data=all_data, family=binomial())
+# 
+# 
+# all_data %>% select(dead, lupus, hospid) %>% 
+#   nest(-hospid) %>% 
+#   mutate(odds_ratio = map_dbl(data, fn_odds_ratio)) -> OR
+# 
+# 
+# 
+# 
+# # Partial pooling ---------------------------------------------------------
+# 
+# mod_partial <- glmer(dead ~ (lupus|hospid), data=all_data,
+#                           family = binomial)
+# next_mod <- sampling(mod_partial, iter = 2000)
 
 
 
@@ -130,64 +130,15 @@ next_mod <- sampling(mod_partial, iter = 2000)
 #   geom_pointrange()+
 #   geom_abline(linetype=2)
 
-library(xgboost)
-
-train_set <- train_set %>% select(dead, ventilator, agecat, slecomb, male, zipinc_qrtl)
-dtrain <- xgb.DMatrix(model.matrix(~.-1, train_set)[,-1], label = train_set$dead)
-test_set1 = model.matrix(~.-1,test_set %>% select(dead, ventilator, agecat, slecomb, male, zipinc_qrtl))
-
-
-dtest = xgb.DMatrix(test_set1[,-1], label = test_set1[,1])
-params <- list(eta = 0.3, objective = 'reg:logistic')
-xgmod = xgb.train(params, dtrain, nrounds=10)
-p = predict(xgmod, dtest)
-
-set.seed(102)
-p2 = xgb.cv(params, dtrain, nrounds=10, nfold=10, prediction=T)$pred
-cal = tibble(dead = train_set$dead, p = p2)
-cal <- cal %>% mutate(pcut = cut(p, seq(0,.9,.1), include.lowest = T),
-                      pcutnum = ((as.numeric(pcut)-0.5)/10))
-cal_summ = cal %>% 
-  filter(!is.na(p)) %>% 
-  group_by(pcutnum) %>% 
-  summarize(m = mean(dead),
-            n = n(),
-            se = sqrt(m*(1-m)/n),
-            ymin = m-2*se,
-            ymax = m+2*se)
-
-ggplot(cal_summ, aes(pcutnum, m,  ymin=ymin, ymax=ymax))+
-  geom_pointrange()+
-  geom_abline(linetype=2)+
-  labs(x = 'Predicted probability',
-       y = 'Observed proportion')+
-  scale_x_continuous(breaks = seq(0.05,0.85,.1),
-                     labels = levels(cal$pcut))
-
-predcal <- tibble(dead = test_set1[,'dead'], p = predict(xgmod, dtest))
-predcal <- predcal %>% mutate(pcut = cut(p, seq(0,.8,.1), include.lowest = T),
-                              pcutnum = ((as.numeric(pcut)-0.5)/10)) 
-predcal_summ <- predcal %>% group_by(pcutnum) %>% 
-  summarise(m = mean(dead),
-            n = n(),
-            se = sqrt(m*(1-m)/n),
-            ymin = m-2*se,
-            ymax = m+2*se)
-
-ggplot(predcal_summ, aes(pcutnum, m, ymin=ymin, ymax=ymax))+
-  geom_pointrange()+
-  geom_abline(linetype=2)+
-  labs(x = 'Predicted probability',
-       y = 'Observed proportion')+
-  scale_x_continuous(breaks = seq(0.05, .75, .1),
-                     labels = levels(predcal$pcut)) 
-                     
-
-
 # by hospital -------------------------------------------------------------
 
+
 ## overall model
-all_data <- readRDS('data/all_data.rds')
+library(xgboost)
+
+set.seed(102)
+
+#all_data <- readRDS('data/all_data.rds')
 train_set <- all_data %>% filter(lupus == 0) %>% 
   select(dead, agecat, lupus, ventilator, elix_score, male, 
          medicare, medicaid, private, otherins,
@@ -201,12 +152,54 @@ test_set <- all_data %>% filter(lupus == 1) %>%
   model.matrix(~.-1, data=.)
 dtest = xgb.DMatrix(test_set[,-1], label = test_set[,1])
 watchlist = list(train = dtrain,eval=dtest)
-params <- list('eta' = 0.3,
-               'objective'= 'reg:logistic',
-               'eval_metric' = 'auc'
+params <- list('eta' = 0.1,
+               'max_depth' = 6,
+               'objective'= 'binary:logistic',
+               'eval_metric' = 'auc', 
+               'gamma'=5
 )
+
+library(caret)
+bl <- xgb.cv(params=params,data=dtrain, nrounds = 100, nfold=5, 
+             metrics='auc', stratified=T, 
+             early_stopping_rounds=3); gc()
+
+trainSet = all_data %>% filter(lupus==0) %>% 
+  select(dead, agecat, lupus, ventilator, elix_score, male, 
+         medicare, medicaid, private, otherins,
+         hospid) %>% 
+  mutate(dead = as.factor(dead)) %>% 
+  as.data.frame
+names(trainSet) <- make.names(names(trainSet))
+for(x in names(trainSet)){
+  if(is.factor(trainSet[,x])){
+    levels(trainSet[,x]) = make.names(levels(trainSet[,x]))
+  }
+}
+parametersGrid = expand.grid(
+  eta = c(.1, .3),
+  max_depth = c(2,4,6,8),
+  nrounds = 100,
+  gamma = c(0, 1, 2),
+  colsample_bytree=1,
+  min_child_weight=c(1,5,10),
+  subsample = 1
+)
+
+controlParameters = trainControl(method='cv', 
+                                number=5,
+                                savePredictions=T, 
+                                classProbs=T)
+model_xgb = train(dead~.,
+                  data=trainSet, 
+                  method='xgbTree',
+                  trControl = controlParameters,
+                  tuneGrid = parametersGrid,
+                  na.action=na.omit); gc()
+
+
 xgbmodel1 = xgb.train(params, dtrain, nrounds = 50, watchlist=watchlist,early_stopping_rounds = 3) # Includes hospitals
-saveRDS(xgbmodel1, file = 'data/xgb_trained.rds') # Test AUC = 0.8625, Train AUC = 0.8423
+saveRDS(xgbmodel1, file = 'data/xgb_trained.rds') # Test AUC = 0.861, Train AUC = .842
 xgbmodel1 = readRDS('data/xgb_trained.rds')
 pred1 <- predict(xgbmodel1, dtest)
 
