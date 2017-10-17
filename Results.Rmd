@@ -1,9 +1,9 @@
 ---
 title: "Results"
 output:
+  html_document: default
   word_document: default
   html_notebook: default
-  html_document: default
 ---
 
 ```{r, echo=F}
@@ -21,7 +21,7 @@ We are interested in discovering if the death risk in individuals admitted with 
 
 We take a counterfactual approach to this problem. We propose to model the risk of death among the non-SLE patients conditional on various covariates including the admission hospital, age, comorbidities, admission on ventilator, gender, and type of insurance. We would then use this model to predict the risk (or probability) of death during hospitalization for each SLE patient using the observed covariates for that patient. This would give the risk of death for that patient under the assumption that they had the same conditional death risk as non-SLE patients. If we add up these predicted probabilities over patients in a hospital, we would get the _expected_ number of deaths (E) among SLE patients under the assumption that they shared the same experience as non-SLE patients. We would compare this with the _observed_ number of deaths (O) among SLE patients at that hospital. The O/E ratio is akin to a standardized mortality rate, where the standardized population would be non-SLE patients with sepsis in the sample. 
 
-In order to flexibly model the conditional risk of death, we use the XGBoost algorithm (Chen, et al, 2016)[^1]. This modern form of gradient boosted trees allows for regularization as well as stochastic
+In order to flexibly model the conditional risk of death, we use the XGBoost algorithm [^1]. This modern form of gradient boosted trees allows for regularization as well as stochastic
 gradient descent methods to reduce the chance of overfitting, and utilizes decision trees as the 
 learning engine to allow flexible prediction of the outome from heterogeneous responses. For training
 the XGBoost model,we use the R package xgboost [^2], running on R[^3] version 3.4. We 
@@ -35,9 +35,10 @@ expected conditional probabilities of death use information across all hospitals
 population of hospitals under the NIS, our analysis is conditional on the hospitals and patients
 in our dataset and so we do not use the sampling weights provided by NIS in our modeling. 
 
-All analyses were performed using R[^3] version 3.4 along with the packages xgboost[^2], 
-caret[^3] and survey[^5].
+All analyses were performed using R version 3.4 along with the packages xgboost, 
+caret and survey[^5].
 
+[^1]: Chen, T., & Guestrin, C. (2016, August). Xgboost: A scalable tree boosting system. In Proceedings of the 22nd acm sigkdd international conference on knowledge discovery and data mining (pp. 785-794). ACM.
 [^2]:Tianqi Chen, Tong He, Michael Benesty, Vadim Khotilovich and Yuan
   Tang (2017). xgboost: Extreme Gradient Boosting. R package version
   0.6-4. https://CRAN.R-project.org/package=xgboost
@@ -56,8 +57,13 @@ caret[^3] and survey[^5].
 # Results
 
 Table 1 gives the sampling weight adjusted summary statistics for various measurements
-utilized in our analysis. 
-```{r, results='asis', cap}
+utilized in our analysis, stratified by SLE status and vital status. We see that the SLE patients were over 85% female, whereas roughly half of the 
+non-SLE patients were female. We also see that more than two-thirds of those who died were put on
+a ventilator on admission, compared to less than one-sixth among those who lived. There were no real
+differences in insurance coverage across the groups. We note that for a hospital to be 
+eligible for this study, it had to have admitted _at least 5 SLE patients with sepsis_ over
+the scope of the survey data (2003-2012 and hospital selected in NIS sample). 
+```{r, results='asis', fig.cap='Table 1: Summaries of differnet patient characteristics by vital staus and SLE status'}
 out <- all_data %>% group_by(dead, lupus) %>% 
   summarize(Age = round(mean(age), 2),
             Female = paste(round(mean(male=='0')*100,2),'%'),
@@ -75,12 +81,15 @@ out <- all_data %>% group_by(dead, lupus) %>%
 out2 = data.frame(t(out)[-1,])
 names(out2) <- unique(out$cats)
 knitr::kable(out2)
-
 ```
 
-## Figure 1
+We next look at the distribution of the observed/expected ratio of deaths by hospital derived
+using our machine learning scheme. We find that 163 hospitals did not see any sepsis-related deaths 
+among SLE patients, and so have an O/E ratio of 0. Among the rest of the 423 hospitals, we see
+that the O/E ratio could be as high as 10.48, with the median value being 1.47, and the 3rd quartile
+being 2.04. 
 
-```{r, fig.width=7}
+```{r, fig.width=7, fig.cap='Figure 1: Distribution of observed/expected ratio for deaths from sepsis across 423 hospitals selected from NIS who admitted at least 5 SLE patients with sepsis within the scope of this study'}
 load('data/lupuseffect.rda')
 blah = oe_overall %>% filter(oe_ratio>0)
 bl2 = oe_overall %>% filter(oe_ratio==0)
@@ -95,11 +104,18 @@ plt <- ggplot(blah, aes(oe_ratio))+
   annotate('text',x=0, y=49, label='N=163', size=3) + 
   ylab('Frequency')
 print(plt)
+death_rate <- all_data %>% group_by(hospid) %>% summarize(rate = mean(dead))
 ```
 
-## Figure 2
+The O/E ratio gives the conditional relative risk of death from sepsis by SLE status. However,
+it is entirely feasible that one could have a hospital with a high death rate from sepsis, but a low
+relative risk from SLE, and vice versa. Figure 2 investigate the comparative effects of the relative risk of
+death from SLE and the absolute risk of death from sepsis by hospital. Here "A" refers to the 
+absolute risk of death by hospital (i.e. the probability of death from sepsis that is observed), and 
+"R" refers to the relative risk of death from sepsis due to SLE status. The cutoff for denoting low and high relative risks was set at 2, i.e., more than a 2-fold increased risk of death due to sepsis
+was considered high. The cutoff for the absolute death rate from sepsis being called high is the median value of `r paste0(format(100*median(death_rate$rate), digits=2, nsmall=2),'%')`. We see that even though the vast majority of hospitals in this study have a reasonable death rate from sepsis, there are some hospitals whith very high death rates where there is no effect of SLE, some hospitals with high absolute death rates where the rates for SLE patients are even higher, and some hospitals where the absolute death rate is low, but the SLE patients have a much higher (4-6, upto 10 times higher) death rate. 
 
-```{r, message=F, warning=F, results='hide', fig.width=7}
+```{r, message=F, warning=F, results='hide', fig.width=7, fig.cap="Figure 2: Relation between the hospital death rate for lupus and the relative risk of death by SLE status by hospital. Circle sizes are proportional to the number of SLE patients with sepsis seen at the hospital over the study period. "}
 death_rate <- all_data %>% group_by(hospid) %>% summarize(rate = mean(dead))
 lupus <- all_data %>% group_by(hospid) %>% summarise(n_lupus = sum(lupus))
 hosp_data <- hosp_data %>% left_join(death_rate) %>% left_join(lupus) %>% left_join(oe_overall)
@@ -121,27 +137,30 @@ plt <- ggplot(dat_for_plot, aes(rate, oe_ratio))+
   scale_size_continuous('# SLE', breaks =c(10,20,40,60))+
   annotate('text',x = c(mr-0.03, mr+0.03, mr), 
                       y = c(9,9,8.3),
-           label=c(paste('\u2190','A-'),
-                   paste('A+','\u2192'),'Median'), 
+           label=c(paste('\u2190','A low'),
+                   paste('A high','\u2192'),'Median'), 
            hjust=c(1,0,0), angle=c(0,0,90), size=5)+
   annotate('text', 
            x = c(.4,.4),
            y = c(1.5,2.5),
-           label = c(paste('R-',sprintf('\u2192')), paste(sprintf('\u2190'),'R+')),
+           label = c(paste('R low',sprintf('\u2192')), paste(sprintf('\u2190'),'R high')),
            angle=-90, vjust = c(.5,.5), hjust=c(0,1), size=5)
 ggsave('Fig2.tiff', width=8, height=4, units='in')
 print(plt)
 ```
 
 
-```{r, fig.width=6, results='hide', eval=FALSE}
-hosp_data <- hosp_data %>% mutate(smr_cat = ifelse(oe_ratio >=2, 'relative +','relative -'),
-                                  death_cat = ifelse(rate >= median(rate), 'absolute +','absolute -'),
-                                  categories = factor(paste(smr_cat, death_cat, sep=', ')))
+The classification of hospitals into R low/high and A low/high is then used to see what kinds of 
+hospital-level characteristics might be predictive of this joint status. We look at this by fitting
+a multiclass decision tree using the CART methodology[^6], as implemented in the R package rpart[^7]. Figure 3 shows the fit decision tree, where the table each node gives the relative frequency of each of the 4 categories of hospitals at that node. We find that SLE experience, i.e. the number of SLE patients seen at the hospital, and region segregate the classes of hospitals best. Hospitals with low SLE experience and low absolute death rates have a 3-fold higher chance of being classified (R high, A low) than hospitals with high SLE volume. Among high SLE experience hospitals, Midwest hospitals are 
+less likely to have a high relative risk due to SLE than the other regions. 
 
-tree2 <- rpart(categories ~ new_highvolume + new_bedsize+ new_teach + region,
-      data = hosp_data, control = rpart.control(minsplit=10) )
-rpart.plot(tree2)```
+```{r, echo=F, fig.cap = 'Decision tree of hospital status based on absolute and relative risks of death, with hospital characteristics like SLE experience, location, bed size and whether it was a rural or urban hopsital being predictors'}
+knitr::include_graphics('docs/DTUpdated/Slide1.png')
+```
 
 
-[^1]: Chen, T. and Guestrin, C., 2016, August. Xgboost: A scalable tree boosting system. In Proceedings of the 22nd acm sigkdd international conference on knowledge discovery and data mining (pp. 785-794). ACM.
+[^6]: Breiman, L., Friedman, J., Stone, C. J., & Olshen, R. A. (1984). Classification and regression trees. CRC press.
+[^7]: Terry Therneau, Beth Atkinson and Brian Ripley (2017). rpart:
+  Recursive Partitioning and Regression Trees. R package version
+  4.1-11. https://CRAN.R-project.org/package=rpart
