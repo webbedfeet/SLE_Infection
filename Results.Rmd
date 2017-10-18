@@ -165,3 +165,26 @@ knitr::include_graphics('docs/DTUpdated/Slide1.png')
 [^7]: Terry Therneau, Beth Atkinson and Brian Ripley (2017). rpart:
   Recursive Partitioning and Regression Trees. R package version
   4.1-11. https://CRAN.R-project.org/package=rpart
+  
+## Descriptive table of hospitals by classification
+
+```{r}
+hosp_data <- readRDS('data/hosp_data.rds')
+percs <- function(d,...){
+  cnts = count(d, ...)
+  cnts %>% mutate(perc = n/sum(n)) %>% select(-n) %>% return()
+}
+hosp_data %>% 
+  select(categories, new_highvolume:region) %>% 
+  mutate(region = fct_relabel(region, str_to_title),
+         categories = fct_relabel(categories, str_to_title)) %>% 
+  rename(`SLE experience`=new_highvolume, `Bed size` = new_bedsize, `Type` = new_teach, Region=region) %>% 
+  gather(Variable, Levels, -categories) %>% 
+  nest(-Variable) %>% 
+  mutate(percs = map(data, ~crosstab(., Levels, categories, percent='col'))) %>% 
+  select(-data) %>% 
+  unnest() %>% 
+  mutate_if(is.numeric, funs(round(100*., 2))) %>% 
+  openxlsx::write.xlsx(file = 'docs/HospTable.xlsx')
+```
+
