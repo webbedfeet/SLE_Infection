@@ -1,7 +1,7 @@
 #+ echo=FALSE, results='hide'
 # Code for modeling the effect of being a lupus patient on survival when admitted for sepsis
 
-source('lib/reload.R'); reload()
+ProjTemplate::reload()
 load(file.path(datadir, 'data','rda','data.rda'))
 
 # fn_odds_ratio <- function(d){
@@ -284,7 +284,16 @@ saveRDS(xgbmodel1, file = 'data/xgb_trained.rds') # Test AUC = 0.861, Train AUC 
 xgbmodel1 = readRDS('data/xgb_trained.rds')
 pred1 <- predict(xgbmodel1, dtest)
 
+### Variable importances
+model = xgb.dump(model=xgbmodel1, with_stats = T)
+names = dimnames(dtrain)[[2]]
+importance_matrix <- xgb.importance(names, model=xgbmodel1)
+xgb.plot.importance(importance_matrix[1:10,])
 
+importance_matrix <- importance_matrix %>% 
+  mutate(Feature = factor(Feature, levels = Feature))
+ggplot(importance_matrix[1:10,], aes(Feature, Gain))+geom_bar(stat='identity')
+ggsave('graphs/VarImp.pdf')
 
 ## Score and compute obs/expected ratios by hospital
 
