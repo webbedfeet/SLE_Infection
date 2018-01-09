@@ -389,7 +389,7 @@ tree <- rpart(bad_ind~ `SLE Experience` + Bedsize+ new_teach + Region,
               data=dat_rplot, control = rpart.control(minsplit=10))
 rpart.plot(tree, type=4, extra = 1, box.palette='Greys')
 
-load('data/lupuseffect.rda')
+#load('data/lupuseffect.rda')
 
 ## Creating an SMR/death rate plot
 death_rate <- all_data %>% group_by(hospid) %>% summarize(rate = mean(dead))
@@ -416,6 +416,11 @@ tree2 <- rpart(categories ~ new_highvolume + new_bedsize+ new_teach + region,
       data = hosp_data, control = rpart.control(minsplit=10) )
 rpart.plot(tree2, type=1)
 saveRDS(hosp_data, file='data/hosp_data.rds')
+
+tree <- rpart(smr_cat ~ new_highvolume + new_bedsize + new_teach + region + death_cat, data=hosp_data)
+rpart.plot(tree, type = 1)
+
+
 ###############################################################################
 ## Predict by hospital
 
