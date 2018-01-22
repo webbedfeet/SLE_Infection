@@ -1,3 +1,5 @@
+- rpart
+- rpart.plot
 - cowplot
 - e1071
 - tidyverse
