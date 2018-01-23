@@ -690,7 +690,7 @@ save(obs_exp, hosp_data,oe_overall, mod_ppool, all_data, file = 'data/lupuseffec
 # ###############################################################################
 # ## Predict by hospital
 # 
-# all_data_split<- all_data %>% mutate(hospid = as.character(hospid)) %>% 
+# all_data_split<- all_data %>% mutate(hospid = as.character(hospid)) %>%
 #   split(.,.$hospid) # hospid was a factor with an extra level
 # 
 # get_obs_exp <- function(d){
@@ -699,20 +699,20 @@ save(obs_exp, hosp_data,oe_overall, mod_ppool, all_data, file = 'data/lupuseffec
 #                  'objective'= 'reg:logistic',
 #                  'early_stopping_rounds' = 5
 #                  )
-#   train_data <- d %>% filter(lupus==0) %>% 
+#   train_data <- d %>% filter(lupus==0) %>%
 #     select(dead, agecat,  ventilator,
-#            slecomb, male) %>% 
+#            slecomb, male) %>%
 #     model.matrix(~. - 1, .)
-#   test_data <- d %>% filter(lupus == 1) %>% 
+#   test_data <- d %>% filter(lupus == 1) %>%
 #     select(dead, agecat,  ventilator,
-#            slecomb, male) %>% 
+#            slecomb, male) %>%
 #     model.matrix(~. - 1, .)
 #   dtrain <-  xgb.DMatrix(train_data[,-1], label = train_data[,1])
 #   dtest <- xgb.DMatrix(test_data[,-1], label=test_data[,1])
 #   xgbmod <- xgb.train(params, dtrain, nrounds = 20)
 #   pred <- predict(xgbmod, dtest)
-#   pred_cal <- tibble(pred=pred, dead = test_data[,1]) 
-#   pred_cal_summ <- pred_cal %>% 
+#   pred_cal <- tibble(pred=pred, dead = test_data[,1])
+#   pred_cal_summ <- pred_cal %>%
 #     summarize(obs = sum(dead), expect = sum(pred))
 #   return(pred_cal_summ)
 # }
