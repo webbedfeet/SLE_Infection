@@ -13,5 +13,5 @@ tree_model <- rpart(`High O/E` ~ ., data=tree_data)
 # tree_model_cat <- rpart(as.factor(`High O/E`)~., data=tree_data)
 
 pdf('graphs/ObsExpTree.pdf')
-prp(tree_model, type=2, extra='auto', yesno=2, fallen.leaves=F, branch=0.1, uniform=F, varlen=0, faclen=0)
+prp(tree_model, type=4, extra='auto', yesno=2, fallen.leaves=F, uniform=F, varlen=0, faclen=0)
 dev.off()
