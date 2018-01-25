@@ -1,3 +1,5 @@
+- knitr
+- htmlTable
 - formattable
 - kableExtra
 - tidyverse
@@ -6,9 +8,9 @@
 - forcats
 - cowplot
 - haven
-- sfirke/janitor # for crosstab
-- Cairo # for unicode in ggplot + pdf
-- survey # for weighted descriptives
+- sfirke/janitor
+- Cairo
+- survey
 - randomForest
 - xgboost
 - rpart
@@ -17,3 +19,4 @@
 - rstanarm
 - lme4
 - ProjTemplate
+

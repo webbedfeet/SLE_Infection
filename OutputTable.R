@@ -1,5 +1,5 @@
 ## Output table of summaries by O/E and absolute categories, based on plot
-
+ProjTemplate::reload()
 load('data/lupuseffect.rda')
 
 ## Creating an SMR/death rate plot
@@ -18,11 +18,31 @@ ggplot(dat_for_plot, aes(rate, oe_ratio))+geom_point(aes(size=n_lupus)) +
   scale_size_continuous('# SLE', breaks =c(10,20,40,60))
 
 dat_for_table <- hosp_data %>% select(hospid, new_highvolume:n_lupus, oe_ratio) %>% 
-  mutate(bad_oe = ifelse(oe_ratio > 2, 1,0),
-         bad_rate = ifelse(rate > median(rate, na.rm=T), 1,0)) %>% 
-  mutate(cats = paste(bad_oe, bad_rate))
+  mutate(bad_oe = ifelse(oe_ratio > 2, 'High Rel','Low Rel'),
+         bad_rate = ifelse(rate > median(rate, na.rm=T), 'High Abs', 'Low Abs')) %>% 
+  mutate(cats = paste(bad_oe, bad_rate, sep = ' / '))
 
-dat_for_table %>% 
-  tabyl(new_highvolume, cats) %>% 
-  adorn_percentages('col') %>% 
-  adorn_pct_formatting()
+
+dat_for_table %>% select(new_highvolume:region, cats) %>% 
+  gather(var, value, -cats) %>% 
+  split(.$var) %>% 
+  lapply(tabyl,  value, cats) %>% 
+  lapply(adorn_percentages, 'row') %>% 
+  lapply(adorn_pct_formatting) %>% 
+  dplyr::bind_rows() %>%
+  mutate(value = str_to_title(value))-> bl
+tmp <- dat_for_table %>% count(cats) %>% spread(cats,n) %>% 
+  mutate_all(as.character)
+tmp <- cbind(tibble('value'='N'), tmp)
+bl <- tmp %>% bind_rows(bl) %>% 
+  set_names('', names(.)[-1])
+bl %>% 
+  kable('html') %>% 
+  # kable_styling() %>% 
+  group_rows('Bedsize',2,4) %>% 
+  group_rows('High SLE Volume', 5,6) %>% 
+  group_rows('Teaching', 7,9) %>% 
+  group_rows('Region', 10,13) %>% 
+  writeLines('docs/OutputTable.html')
+
+  
