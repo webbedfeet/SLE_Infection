@@ -1,7 +1,7 @@
 #+ echo=FALSE, results='hide'
 # Code for modeling the effect of being a lupus patient on survival when admitted for sepsis
 
-source('lib/reload.R'); reload()
+ProjTemplate::reload()
 load(file.path(datadir, 'data','rda','data.rda'))
 
 # fn_odds_ratio <- function(d){
@@ -284,7 +284,16 @@ saveRDS(xgbmodel1, file = 'data/xgb_trained.rds') # Test AUC = 0.861, Train AUC 
 xgbmodel1 = readRDS('data/xgb_trained.rds')
 pred1 <- predict(xgbmodel1, dtest)
 
+### Variable importances
+model = xgb.dump(model=xgbmodel1, with_stats = T)
+names = dimnames(dtrain)[[2]]
+importance_matrix <- xgb.importance(names, model=xgbmodel1)
+xgb.plot.importance(importance_matrix[1:10,])
 
+importance_matrix <- importance_matrix %>% 
+  mutate(Feature = factor(Feature, levels = Feature))
+ggplot(importance_matrix[1:10,], aes(Feature, Gain))+geom_bar(stat='identity')
+ggsave('graphs/VarImp.pdf')
 
 ## Score and compute obs/expected ratios by hospital
 
@@ -380,7 +389,7 @@ tree <- rpart(bad_ind~ `SLE Experience` + Bedsize+ new_teach + Region,
               data=dat_rplot, control = rpart.control(minsplit=10))
 rpart.plot(tree, type=4, extra = 1, box.palette='Greys')
 
-load('data/lupuseffect.rda')
+#load('data/lupuseffect.rda')
 
 ## Creating an SMR/death rate plot
 death_rate <- all_data %>% group_by(hospid) %>% summarize(rate = mean(dead))
@@ -407,6 +416,11 @@ tree2 <- rpart(categories ~ new_highvolume + new_bedsize+ new_teach + region,
       data = hosp_data, control = rpart.control(minsplit=10) )
 rpart.plot(tree2, type=1)
 saveRDS(hosp_data, file='data/hosp_data.rds')
+
+tree <- rpart(smr_cat ~ new_highvolume + new_bedsize + new_teach + region + death_cat, data=hosp_data)
+rpart.plot(tree, type = 1)
+
+
 ###############################################################################
 ## Predict by hospital
 
@@ -505,26 +519,30 @@ save(obs_exp, hosp_data,oe_overall, mod_ppool, all_data, file = 'data/lupuseffec
 # # by hospital -------------------------------------------------------------
 # 
 # ## overall model
-# all_data <- readRDS('data/all_data.rds')
-# train_set <- all_data %>% filter(lupus == 1) %>% 
-#   select(dead, agecat, lupus, ventilator, elix_score, male, 
-#          medicare, medicaid, private, otherins,
-#           hospid) %>% 
-#   model.matrix(~.-1, data=.)
-# dtrain = xgb.DMatrix(train_set[,-1], label = train_set[,1])
-# test_set <- all_data %>% filter(lupus == 1) %>% 
-#   select(dead, agecat, lupus, ventilator, elix_score, male, 
-#          medicare, medicaid, private, otherins,
-#          hospid) %>% 
-#   model.matrix(~.-1, data=.)
-# dtest = xgb.DMatrix(test_set[,-1], label = test_set[,1])
-# params <- list('eta' = 0.3,
-#                'objective'= 'reg:logistic',
-#                'early_stopping_rounds' = 5,
-#                'eval_metric'='error'
-# )
-# xgbmodel1 = xgb.train(params, dtrain, nrounds = 20) # Includes hospitals
-# saveRDS(xgbmodel1, file = 'data/xgb_trained.rds')
+all_data <- readRDS('data/all_data.rds')
+train_set <- all_data %>% filter(lupus == 1) %>%
+  select(dead, agecat, lupus, ventilator, elix_score, male,
+         medicare, medicaid, private, otherins,
+          hospid) %>%
+  model.matrix(~.-1, data=.)
+dtrain = xgb.DMatrix(train_set[,-1], label = train_set[,1])
+test_set <- all_data %>% filter(lupus == 1) %>%
+  select(dead, agecat, lupus, ventilator, elix_score, male,
+         medicare, medicaid, private, otherins,
+         hospid) %>%
+  model.matrix(~.-1, data=.)
+dtest = xgb.DMatrix(test_set[,-1], label = test_set[,1])
+params <- list('eta' = 0.3,
+               'objective'= 'reg:logistic',
+               'early_stopping_rounds' = 5,
+               'eval_metric'='error'
+)
+xgbmodel1 = xgb.train(params, dtrain, nrounds = 100, early_stopping_rounds = 5, watchlist = list('training'=dtrain)) # Includes hospitals
+saveRDS(xgbmodel1, file = 'data/xgb_trained.rds')
+pdf('graphs/VarImpPlot.pdf')
+xgb.plot.importance(xgb.importance(colnames(train_set)[-1], model=xgbmodel1), top_n=20, rel_to_first=T)
+dev.off()
+
 # pred1 <- predict(xgbmodel1, dtest)
 # 
 # bl <- all_data %>% filter(lupus == 1)
@@ -562,28 +580,28 @@ save(obs_exp, hosp_data,oe_overall, mod_ppool, all_data, file = 'data/lupuseffec
 # 
 # ## An alternative model including year of admission
 # 
-# all_data <- readRDS('data/all_data.rds')
-# train_set <- all_data %>% filter(lupus == 0) %>% 
-#   select(dead, agecat, lupus, ventilator, elix_score, male, 
-#          medicare, medicaid, private, otherins,year,
-#          hospid) %>% 
-#   model.matrix(~.-1, data=.)
-# dtrain = xgb.DMatrix(train_set[,-1], label = train_set[,1])
-# test_set <- all_data %>% filter(lupus == 1) %>% 
-#   select(dead, agecat, lupus, ventilator, elix_score, male, 
-#          medicare, medicaid, private, otherins, year, 
-#          hospid) %>% 
-#   model.matrix(~.-1, data=.)
-# dtest = xgb.DMatrix(test_set[,-1], label = test_set[,1])
-# params <- list('eta' = 0.3,
-#                'max_depth' = 6,
-#                'objective'= 'reg:logistic',
-#                'eval_metric' = 'auc',
-#                'early_stopping_rounds' = 5
-# )
-# xgbmodel1 = xgb.train(params, dtrain, nrounds = 20,
-#                       watchlist = list('validation' = dtest),
-#                       early_stopping_rounds = 4) # Includes hospitals
+all_data <- readRDS('data/all_data.rds')
+train_set <- all_data %>% filter(lupus == 0) %>%
+  select(dead, agecat, lupus, ventilator, elix_score, male,
+         medicare, medicaid, private, otherins,year,
+         hospid) %>%
+  model.matrix(~.-1, data=.)
+dtrain = xgb.DMatrix(train_set[,-1], label = train_set[,1])
+test_set <- all_data %>% filter(lupus == 1) %>%
+  select(dead, agecat, lupus, ventilator, elix_score, male,
+         medicare, medicaid, private, otherins, year,
+         hospid) %>%
+  model.matrix(~.-1, data=.)
+dtest = xgb.DMatrix(test_set[,-1], label = test_set[,1])
+params <- list('eta' = 0.3,
+               'max_depth' = 6,
+               'objective'= 'reg:logistic',
+               'eval_metric' = 'auc',
+               'early_stopping_rounds' = 5
+)
+xgbmodel1 = xgb.train(params, dtrain, nrounds = 20,
+                      watchlist = list('validation' = dtest),
+                      early_stopping_rounds = 4) # Includes hospitals
 # saveRDS(xgbmodel1, file = 'data/xgb_trained.rds')
 # pred1 <- predict(xgbmodel1, dtest)
 # 
@@ -676,7 +694,7 @@ save(obs_exp, hosp_data,oe_overall, mod_ppool, all_data, file = 'data/lupuseffec
 # ###############################################################################
 # ## Predict by hospital
 # 
-# all_data_split<- all_data %>% mutate(hospid = as.character(hospid)) %>% 
+# all_data_split<- all_data %>% mutate(hospid = as.character(hospid)) %>%
 #   split(.,.$hospid) # hospid was a factor with an extra level
 # 
 # get_obs_exp <- function(d){
@@ -685,20 +703,20 @@ save(obs_exp, hosp_data,oe_overall, mod_ppool, all_data, file = 'data/lupuseffec
 #                  'objective'= 'reg:logistic',
 #                  'early_stopping_rounds' = 5
 #                  )
-#   train_data <- d %>% filter(lupus==0) %>% 
+#   train_data <- d %>% filter(lupus==0) %>%
 #     select(dead, agecat,  ventilator,
-#            slecomb, male) %>% 
+#            slecomb, male) %>%
 #     model.matrix(~. - 1, .)
-#   test_data <- d %>% filter(lupus == 1) %>% 
+#   test_data <- d %>% filter(lupus == 1) %>%
 #     select(dead, agecat,  ventilator,
-#            slecomb, male) %>% 
+#            slecomb, male) %>%
 #     model.matrix(~. - 1, .)
 #   dtrain <-  xgb.DMatrix(train_data[,-1], label = train_data[,1])
 #   dtest <- xgb.DMatrix(test_data[,-1], label=test_data[,1])
 #   xgbmod <- xgb.train(params, dtrain, nrounds = 20)
 #   pred <- predict(xgbmod, dtest)
-#   pred_cal <- tibble(pred=pred, dead = test_data[,1]) 
-#   pred_cal_summ <- pred_cal %>% 
+#   pred_cal <- tibble(pred=pred, dead = test_data[,1])
+#   pred_cal_summ <- pred_cal %>%
 #     summarize(obs = sum(dead), expect = sum(pred))
 #   return(pred_cal_summ)
 # }

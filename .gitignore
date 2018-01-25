@@ -5,3 +5,8 @@
 packrat/lib*/
 *.html
 Rplot*
+*~
+*.csv
+*.rds
+~*
+*.pdf

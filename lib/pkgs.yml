@@ -6,7 +6,7 @@
 - forcats
 - cowplot
 - haven
-- janitor # for crosstab
+- sfirke/janitor # for crosstab
 - Cairo # for unicode in ggplot + pdf
 - survey # for weighted descriptives
 - randomForest
@@ -16,4 +16,4 @@
 - rstan
 - rstanarm
 - lme4
-- MCMCglmm
+- ProjTemplate
