@@ -19,7 +19,7 @@ lupus_data <- lupus_data %>%
   mutate(year_scaled = scale(as.numeric(as.character(year)),
                              center = T, scale = F))
 
-lupus_data %>% count(hospid) %>% filter(n >= 10) %>% 
+lupus_data %>% dplyr::count(hospid) %>% filter(n >= 10) %>% 
   select(hospid) %>% 
   left_join(lupus_data) -> lupus_data_10
 
@@ -32,7 +32,7 @@ nonlupus_data <- nonlupus_data %>%
   
 hosp_data <- nonlupus_data %>% 
   group_by(hospid) %>% 
-  summarise(nonlupus_admissions = n(), 
+  dplyr::summarise(nonlupus_admissions = n(), 
             nonlupus_mortality = mean(dead),
             nonlupus_dead = sum(dead),
             teach = max(teach),
