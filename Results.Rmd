@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r, echo=F}
-knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 ```
 
 ```{r, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
@@ -150,6 +150,33 @@ ggsave('Fig2.tiff', width=8, height=4, units='in')
 print(plt)
 ```
 
+In fact, there are interesting inter-relationships between the lupus-specific mortality rate, the 
+hospital's overall mortality rate, and the O/E ratio. It's not currently clear which measure or combination 
+of measures would be most insightful. In this section, let us look at these inter-relationships.
+
+```{r}
+death_rate <- all_data %>% group_by(hospid) %>% summarize(rate = mean(dead))
+lupus_mortality <- all_data %>% filter(lupus==1) %>% group_by(hospid) %>%
+  summarize(lupus_rate = mean(dead, na.rm=T))
+lupus <- all_data %>% group_by(hospid) %>% summarise(n_lupus = sum(lupus))
+hosp_data <- reduce( list(hosp_data, death_rate, lupus_mortality, lupus, oe_overall), left_join)
+dat_for_plots <- hosp_data %>% 
+  select(n_lupus, rate, lupus_rate, oe_ratio)
+GGally::ggpairs(select(dat_for_plots, -n_lupus))
+
+```
+
+In particular, if we look at lupus mortality vs the O/E ratio, we see an interesting increasing pattern:
+```{r}
+ggplot(dat_for_plots, aes(lupus_rate, oe_ratio, size= n_lupus))+
+  geom_point()+
+  geom_hline(yintercept = 1)+
+  geom_hline(yintercept = 2, linetype=2)+
+  scale_x_continuous('Lupus mortality rate', breaks = c(round(median(dat_for_plots$lupus_rate),2), seq(0, 0.6,by = 0.2))) +
+  scale_y_continuous('O/E ratio', breaks = c(1, seq(0,10, by=2)))+
+  geom_vline(aes(xintercept = median(lupus_rate, na.rm=T)))+
+  annotate('text', x = 0.12, y = 8, label = 'Median rate', angle = 90)
+```
 
 The classification of hospitals into R low/high and A low/high is then used to see what kinds of 
 hospital-level characteristics might be predictive of this joint status. We look at this by fitting
