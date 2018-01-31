@@ -219,7 +219,7 @@ library(xgboost)
 
 set.seed(102)
 
-#all_data <- readRDS('data/all_data.rds')
+# all_data <- readRDS('data/all_data.rds')
 train_set <- all_data %>% filter(lupus == 0) %>% 
   select(dead, agecat, lupus, ventilator, elix_score, male, 
          medicare, medicaid, private, otherins,
