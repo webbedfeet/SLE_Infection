@@ -50,3 +50,44 @@ ggplot(oe_overall, aes(x = oe_ratio)) +
 
 ggsave('graphs/Figure2.pdf', scale = 0.3)
 ggsave('graphs/Figure2.tiff', scale = 0.3, compression = 'lzw', dpi=300)
+
+
+# Figure 3: Crude mortality and O/E ratio -----------------------------------------------------
+
+death_rate <- all_data %>% group_by(hospid) %>% summarize(rate = mean(dead))
+lupus_mortality <- all_data %>% filter(lupus==1) %>% group_by(hospid) %>%
+  summarize(lupus_rate = mean(dead, na.rm=T))
+lupus <- all_data %>% group_by(hospid) %>% summarise(n_lupus = sum(lupus))
+hosp_data <- reduce( list(hosp_data, death_rate, lupus_mortality, lupus, oe_overall), left_join)
+dat_for_plots <- hosp_data %>% 
+  select(n_lupus, rate, lupus_rate, oe_ratio)
+
+ggplot(dat_for_plots, aes(lupus_rate, oe_ratio, size = n_lupus))+
+  geom_point() +
+  geom_hline(yintercept = 1) +
+  # geom_hline(yintercept = 2, linetype = 2) +
+  scale_x_continuous('Crude Mortality', breaks = c(round(median(dat_for_plots$lupus_rate),2), seq(0, 0.6,by = 0.2))) +
+  scale_y_continuous('O/E ratio', breaks = c(1, seq(0,10, by=2)))+
+  geom_vline(aes(xintercept = median(lupus_rate, na.rm=T)), linetype = 2) +
+  annotate('text', x = 0.12, y = 8, label = 'Median rate', angle = 90) + 
+  scale_size_continuous(breaks = c(5,10,20,40,60),
+                        guide = guide_legend(title = 'Number of lupus patients',
+                                             title.position = 'left', 
+                                             title.theme = element_text(size = 11, angle = 0),
+                                             label.theme = element_text(size = 10, angle = 0),
+                                             direction = 'horizontal',
+                                             nrow = 1)) +
+  theme(legend.position = 'top', legend.justification = 'center')
+  
+ggsave('graphs/Figure3.pdf', scale = 0.5)
+ggsave('graphs/Figure3.tiff', scale = 0.3, compression = 'lzw')
+
+# Figure 4: Tree ------------------------------------------------------------------------------
+
+dat_rplot <- hosp_data %>% 
+  rename(`SLE Experience` = new_highvolume, Bedsize = new_bedsize, 
+         Region=region)
+levels(dat_rplot$Region) = c('Northeast','Midwest','South','West')
+tree <- rpart(bad_ind~ `SLE Experience` + Bedsize+ new_teach + Region,
+              data=dat_rplot, control = rpart.control(minsplit=10))
+rpart.plot(tree, type=4, extra = 1, box.palette='Greys')
