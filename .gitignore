@@ -10,4 +10,4 @@ Rplot*
 *.rds
 ~*
 *.pdf
-OutputTable.R
+*.tiff
