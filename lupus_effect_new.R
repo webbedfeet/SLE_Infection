@@ -580,28 +580,28 @@ dev.off()
 # 
 # ## An alternative model including year of admission
 # 
-all_data <- readRDS('data/all_data.rds')
-train_set <- all_data %>% filter(lupus == 0) %>%
-  select(dead, agecat, lupus, ventilator, elix_score, male,
-         medicare, medicaid, private, otherins,year,
-         hospid) %>%
-  model.matrix(~.-1, data=.)
-dtrain = xgb.DMatrix(train_set[,-1], label = train_set[,1])
-test_set <- all_data %>% filter(lupus == 1) %>%
-  select(dead, agecat, lupus, ventilator, elix_score, male,
-         medicare, medicaid, private, otherins, year,
-         hospid) %>%
-  model.matrix(~.-1, data=.)
-dtest = xgb.DMatrix(test_set[,-1], label = test_set[,1])
-params <- list('eta' = 0.3,
-               'max_depth' = 6,
-               'objective'= 'reg:logistic',
-               'eval_metric' = 'auc',
-               'early_stopping_rounds' = 5
-)
-xgbmodel1 = xgb.train(params, dtrain, nrounds = 20,
-                      watchlist = list('validation' = dtest),
-                      early_stopping_rounds = 4) # Includes hospitals
+# all_data <- readRDS('data/all_data.rds')
+# train_set <- all_data %>% filter(lupus == 0) %>%
+#   select(dead, agecat, lupus, ventilator, elix_score, male,
+#          medicare, medicaid, private, otherins,year,
+#          hospid) %>%
+#   model.matrix(~.-1, data=.)
+# dtrain = xgb.DMatrix(train_set[,-1], label = train_set[,1])
+# test_set <- all_data %>% filter(lupus == 1) %>%
+#   select(dead, agecat, lupus, ventilator, elix_score, male,
+#          medicare, medicaid, private, otherins, year,
+#          hospid) %>%
+#   model.matrix(~.-1, data=.)
+# dtest = xgb.DMatrix(test_set[,-1], label = test_set[,1])
+# params <- list('eta' = 0.3,
+#                'max_depth' = 6,
+#                'objective'= 'reg:logistic',
+#                'eval_metric' = 'auc',
+#                'early_stopping_rounds' = 5
+# )
+# xgbmodel1 = xgb.train(params, dtrain, nrounds = 20,
+#                       watchlist = list('validation' = dtest),
+#                       early_stopping_rounds = 4) # Includes hospitals
 # saveRDS(xgbmodel1, file = 'data/xgb_trained.rds')
 # pred1 <- predict(xgbmodel1, dtest)
 # 
