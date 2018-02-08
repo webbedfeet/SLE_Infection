@@ -178,6 +178,8 @@ ggplot(dat_for_plots, aes(lupus_rate, oe_ratio, size= n_lupus))+
   annotate('text', x = 0.12, y = 8, label = 'Median rate', angle = 90)
 ```
 
+The weighted correlation between the mortality rate and the O/E ratio is `with(dat_for_plots, wtd.cor(oe_ratio, lupus_rate, weight = n_lupus))`.
+
 The classification of hospitals into R low/high and A low/high is then used to see what kinds of 
 hospital-level characteristics might be predictive of this joint status. We look at this by fitting
 a multiclass decision tree using the CART methodology[^6], as implemented in the R package rpart[^7]. Figure 3 shows the fit decision tree, where the table each node gives the relative frequency of each of the 4 categories of hospitals at that node. We find that SLE experience, i.e. the number of SLE patients seen at the hospital, and region segregate the classes of hospitals best. Hospitals with low SLE experience and low absolute death rates have a 3-fold higher chance of being classified (R high, A low) than hospitals with high SLE volume. Among high SLE experience hospitals, Midwest hospitals are 
