@@ -10,3 +10,5 @@ Rplot*
 *.rds
 ~*
 *.pdf
+*.db
+*.docx
