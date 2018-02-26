@@ -43,8 +43,13 @@ ggplot(varimp, aes(new_Feature, Gain)) + geom_bar(stat='identity') +
   coord_flip()
 
 ggsave('graphs/Figure1.pdf')
+<<<<<<< HEAD
 ggsave('graphs/Figure1.tiff',scale = 0.5,
        dpi = 300, compression = 'lzw')
+=======
+# ggsave('graphs/Figure1.tiff',scale = 0.5,
+#        dpi = 300, compression = 'lzw')
+>>>>>>> 21fa55a50d5e497710a2903d8ae600d129b85394
 
 
 # Figure 2: Histogram of O/E ------------------------------------------------------------------
@@ -52,11 +57,11 @@ ggsave('graphs/Figure1.tiff',scale = 0.5,
 load('data/lupuseffect.rda')
 
 ggplot(oe_overall, aes(x = oe_ratio)) + 
-  geom_histogram(color = 'black', fill = 'white', breaks = seq(0,11,by=1), position = 'identity') +
+  geom_histogram(color = 'black', fill = 'grey50', breaks = seq(0,11,by=1), position = 'identity') +
   xlab('O/E ratio') + ylab('Frequency')
 
-ggsave('graphs/Figure2.pdf', scale = 0.3)
-ggsave('graphs/Figure2.tiff', scale = 0.3, compression = 'lzw', dpi=300)
+ggsave('graphs/Figure2.pdf')
+# ggsave('graphs/Figure2.tiff', scale = 0.3, compression = 'lzw', dpi=300)
 
 
 # Figure 3: Crude mortality and O/E ratio -----------------------------------------------------
@@ -73,21 +78,22 @@ ggplot(dat_for_plots, aes(lupus_rate, oe_ratio, size = n_lupus))+
   geom_point() +
   geom_hline(yintercept = 1) +
   # geom_hline(yintercept = 2, linetype = 2) +
-  scale_x_continuous('Crude Mortality', breaks = c(round(median(dat_for_plots$lupus_rate),2), seq(0, 0.6,by = 0.2))) +
-  scale_y_continuous('O/E ratio', breaks = c(1, seq(0,10, by=2)))+
-  geom_vline(aes(xintercept = median(lupus_rate, na.rm=T)), linetype = 2) +
-  annotate('text', x = 0.12, y = 8, label = 'Median rate', angle = 90) + 
-  scale_size_continuous(breaks = c(5,10,20,40,60),
-                        guide = guide_legend(title = 'Number of lupus patients',
-                                             title.position = 'left', 
+  scale_x_continuous('Crude Mortality',
+                     breaks = seq(0,0.6, by = 0.2), labels = scales::percent) +  #c(round(median(dat_for_plots$lupus_rate),2), seq(0, 0.6,by = 0.2))) +
+  scale_y_continuous('O/E ratio', breaks = c(1, seq(0,10, by=2))) +
+  # geom_vline(aes(xintercept = median(lupus_rate, na.rm=T)), linetype = 2) +
+  # annotate('text', x = 0.12, y = 8, label = 'Median rate', angle = 90) + 
+  scale_size_continuous(breaks = c(5,20,40),
+                        guide = guide_legend(title = 'N',
+                                             title.position = 'top', 
                                              title.theme = element_text(size = 11, angle = 0),
                                              label.theme = element_text(size = 10, angle = 0),
-                                             direction = 'horizontal',
-                                             nrow = 1)) +
-  theme(legend.position = 'top', legend.justification = 'center')
+                                             direction = 'vertical',
+                                             ncol = 1)) +
+  theme(legend.position = 'right', legend.justification = 'right')
   
-ggsave('graphs/Figure3.pdf', scale = 0.5)
-ggsave('graphs/Figure3.tiff', scale = 0.3, compression = 'lzw')
+ggsave('graphs/Figure3.pdf')
+# ggsave('graphs/Figure3.tiff', scale = 0.3, compression = 'lzw')
 
 # Figure 4: Tree ------------------------------------------------------------------------------
 
