@@ -43,13 +43,6 @@ ggplot(varimp, aes(new_Feature, Gain)) + geom_bar(stat='identity') +
   coord_flip()
 
 ggsave('graphs/Figure1.pdf')
-<<<<<<< HEAD
-ggsave('graphs/Figure1.tiff',scale = 0.5,
-       dpi = 300, compression = 'lzw')
-=======
-# ggsave('graphs/Figure1.tiff',scale = 0.5,
-#        dpi = 300, compression = 'lzw')
->>>>>>> 21fa55a50d5e497710a2903d8ae600d129b85394
 
 
 # Figure 2: Histogram of O/E ------------------------------------------------------------------
