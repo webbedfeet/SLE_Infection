@@ -1,4 +1,10 @@
 ProjTemplate::reload()
+extrafont::font_import()
+if(Sys.info()$sysname == 'Windows'){
+  extrafont::loadfont(device = 'win')
+} else {
+  extrafont::loadfonts()
+}
 
 # Figure 1: Variable importance plot ----------------------------------------------------------
 
@@ -11,7 +17,7 @@ train_set <- all_data %>% filter(lupus == 1) %>%
 xgbmodel1 <- readRDS('data/xgb_trained.rds')
 
 english_names <- c('ventilator1'  = "Ventilator",
-                   "elix_score" = "Elix Score",
+                   "elix_score" = "Elixhauser Score",
                    "agecat1" = 'Age 18-29',
                    'agecat2' = 'Age 30-49',
                    'agecat3' = 'Age 50-59',
@@ -31,11 +37,12 @@ varimp <- as_tibble(varimp) %>%
   mutate(new_Feature = factor(new_Feature, levels = new_Feature[order(Gain)]))
 
 ggplot(varimp, aes(new_Feature, Gain)) + geom_bar(stat='identity') + 
-  xlab('Features') + 
+  xlab('') + 
   ylab('Relative Variable importance') + 
+  theme(text = element_text(family = "Palatino")) + 
   coord_flip()
 
-ggsave('graphs/Figure1.pdf', scale = 0.5)
+ggsave('graphs/Figure1.pdf')
 ggsave('graphs/Figure1.tiff',scale = 0.5,
        dpi = 300, compression = 'lzw')
 
