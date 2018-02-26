@@ -1,35 +1,54 @@
-# Data acquisition and munging
-source('lib/reload.R'); reload()
+##%######################################################%##
+#                                                          #
+####     Updated analysis with exp_sepsis2.sas7bdat     ####
+####            Data ingestion and munging              ####
+#                                                          #
+##%######################################################%##
+
+ProjTemplate::reload()
 
 
 # Read data ---------------------------------------------------------------
 
-lupus_data <- read_sas(file.path(datadir,'data','raw', 'sepsis_sle.sas7bdat'))
-names(lupus_data) <- tolower(names(lupus_data))
+dat <- haven::read_sas(file.path(datadir,'data','raw','exp_sepsis2.sas7bdat')) %>% 
+  set_names(tolower(names(.))) %>% 
+  mutate(key = as.character(key))
 
-nonlupus_data <- read_sas(file.path(datadir,'data','raw','sepsis_nonlupus.sas7bdat'))
-names(nonlupus_data) <- tolower(names(nonlupus_data))
+lupus_data <- dat %>% filter(lupus == 1)
+nonlupus_data <- dat %>% filter(lupus == 0)
+
 
 # Data munging ------------------------------------------------------------
 
 lupus_data <- lupus_data %>% 
-  mutate_at(vars(male, agecat, payer, zipinc_qrtl, slecomb_cat, 
-                 ventilator,  year, hospid),
+  mutate_at(vars(male, agecat,  zipinc_qrtl, #slecomb_cat, 
+                 ventilator,  starts_with('failure'), year, hospid),
             as.factor) %>% 
   mutate(year_scaled = scale(as.numeric(as.character(year)),
-                             center = T, scale = F))
+                             center = T, scale = F)) %>% 
+  mutate(payer = case_when(medicare == 1 ~ 1,
+                           medicaid == 1 ~ 2,
+                           private == 1 ~ 3,
+                           otherins == 1 ~ 4))
 
 lupus_data %>% dplyr::count(hospid) %>% filter(n >= 10) %>% 
   select(hospid) %>% 
   left_join(lupus_data) -> lupus_data_10
 
 nonlupus_data <- nonlupus_data %>% 
-  mutate_at(vars(male, agecat, payer, zipinc_qrtl, ventilator, year, 
+  mutate_at(vars(male, agecat, #payer, 
+                 zipinc_qrtl, ventilator,  starts_with('failure'), 
+                 year,
                  hospid),
             as.factor) %>% 
   mutate(year_scaled = scale(as.numeric(as.character(year)),
-                             center = T, scale = F))
+                             center = T, scale = F)) %>% 
+  mutate(payer = case_when(medicare == 1 ~ 1,
+                           medicaid == 1 ~ 2,
+                           private == 1 ~ 3,
+                           otherins == 1 ~ 4))
   
+# TODO: Update this next code chunk to include the new failure variables.
 hosp_data <- nonlupus_data %>% 
   group_by(hospid) %>% 
   dplyr::summarise(nonlupus_admissions = n(), 
@@ -57,5 +76,5 @@ all_data <- rbind(lupus_data %>% filter(hospid %in% common_hosp) %>% select(comm
                   nonlupus_data %>% filter(hospid %in% common_hosp) %>% select(common_names))
 
 save(lupus_data, lupus_data_10, nonlupus_data, hosp_data, all_data,
-     file = file.path(datadir,'data','rda','data.rda'), 
+     file = file.path(datadir,'data','rda','exp_sepsis2','data.rda'), 
      compress = T)
