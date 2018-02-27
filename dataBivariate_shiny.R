@@ -16,6 +16,7 @@ ui <- fluidPage(
                   label = 'X-axis:',
                   choices = names(dplyr::select(hosp_data, lupus_dead:nonlupus_failure_renal)),
                   selected = 'nonlupus_dead'),
+      checkboxInput('chk1','Color',value=F),
       selectInput(inputId = 'z', 
                   label = "Color by:",
                   choices = c('',names(dplyr::select(hosp_data, teach:hosp_region))),
@@ -34,10 +35,14 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   output$scatterplot = renderPlot({
-    ggplot(data = hosp_data, aes_string(x = input$x, y = input$y, color = input$z, size = input$w))+
-      geom_point()+
-      geom_abline() +
-      geom_smooth(se = FALSE)
+    plt <- ggplot(data = hosp_data, aes_string(x = input$x, y = input$y, size=input$w)) + 
+      geom_abline()
+    if(input$chk1){
+      plt + geom_point(aes_string(color = input$z)) + 
+        geom_smooth(aes_string(color=input$z), se=F)
+    } else {
+      plt + geom_point() + geom_smooth(se=F)
+    }
   })
 }
 
