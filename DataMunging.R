@@ -44,17 +44,18 @@ hosp_data <- dat %>%
   group_by(hospid) %>% 
   summarise_at(vars(teach, highvolume, bedsize, hosp_region),
                funs(max(.))) 
+hosp_data <- dat %>% group_by(hospid) %>% 
+  summarise(n_sepsis = n()) %>% 
+  right_join(hosp_data)
 
 hosp_data <- nonlupus_data %>% 
   group_by(hospid) %>% 
   summarise_at(vars(ventilator, starts_with('failure')),
                funs(mean(. == '1'))) %>% 
+  rename_at(vars(-hospid), funs(paste0('nonlupus_', .))) %>% 
   right_join(hosp_data)
 
 
-= max(teach),
-            highvolume = max(highvolume),
-            bedsi
 hosp_data <- nonlupus_data %>% 
   group_by(hospid) %>% 
   dplyr::summarise(nonlupus_sepsis = n(), 
