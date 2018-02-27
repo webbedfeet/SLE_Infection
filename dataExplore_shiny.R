@@ -34,7 +34,7 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   output$scatterplot = renderPlot({
-    ggplot(data = hosp_data, aes_string(x = input$x, y = input$y,  size = input$w))+
+    ggplot(data = hosp_data, aes_string(x = input$x, y = input$y, color = input$z, size = input$w))+
       geom_point()+
       geom_abline() +
       geom_smooth(se = FALSE)
