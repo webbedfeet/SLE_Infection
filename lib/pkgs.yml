@@ -12,13 +12,8 @@
 - haven
 - sfirke/janitor
 - Cairo
-- survey
-- randomForest
 - xgboost
 - rpart
 - rpart.plot
-- rstan
-- rstanarm
-- lme4
 - ProjTemplate
 
