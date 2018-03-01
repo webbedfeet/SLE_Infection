@@ -22,7 +22,7 @@ dat <- dat %>%
   mutate_at(vars(male, dead, agecat, zipinc_qrtl, ventilator,
                  starts_with('failure'),
                  year, hospid), as.factor) %>% 
-  mutate(year_scaled = scale(as.numeric(as.character(year)), center=T, scale=F)) %>% 
+  mutate(year_scaled = scale(as.numeric(as.character(year)), center = T, scale = F)) %>% 
   mutate(payer = case_when(medicare == 1 ~ 1,
                            medicaid == 1 ~ 2,
                            private == 1 ~ 3,
@@ -39,7 +39,8 @@ lupus_data %>% dplyr::count(hospid) %>% filter(n >= 10) %>%
 hosp_data <- dat %>% 
   group_by(hospid) %>% 
   summarise_at(vars(teach, highvolume, bedsize, hosp_region),
-               funs(max(.))) 
+               funs(max(.))) %>% 
+  mutate_all( as.factor)
 hosp_data <- dat %>% group_by(hospid) %>% 
   summarise(n_sepsis = n()) %>% 
   right_join(hosp_data)
