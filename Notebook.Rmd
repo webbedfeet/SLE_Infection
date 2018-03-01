@@ -103,3 +103,12 @@ One issue is that this is purely an observational study, with no randomization i
 
 Are there meta-analytic methods we could use? In fact, we could assume that the hospitals are a random subset of all hospitals in the US (since this is from NIS), and then look at the difference in rates, aggregating using a random effects meta-analysis. We could also add a meta-regression to this question, since there appears to be some relationship with the frequency with which patients are put on a ventilator (as a surrogate for the severity of infection).
 
+## March 1, 2018
+
+In the process of writing the paper, Mike found that we should probably look at some additional variables. He also updated the data
+to include two more ICD-10 codes, so we got one more hospital in the dataset. 
+
+The idea we will now investigate is to create an overall prediction model just based on individual characteristics. We then look within 
+each hospital as to the observed/expected ratios for lupus and non-lupus patients. The ratio of the ratios will give us the "lupus effect" for the hospital. The E's should give us a sense of the case mix at each hospital, i.e., are particular hospitals getting more severe patients. 
+
+I need to think about this and what the implications of this are, specially with interpretation. 
