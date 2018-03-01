@@ -14,8 +14,6 @@ dat <- haven::read_sas(file.path(datadir,'data','raw','exp_sepsis2.sas7bdat')) %
   set_names(tolower(names(.))) %>% 
   mutate(key = as.character(key))
 
-lupus_data <- dat %>% filter(lupus == 1)
-nonlupus_data <- dat %>% filter(lupus == 0)
 
 
 # Data munging ------------------------------------------------------------
@@ -38,8 +36,6 @@ lupus_data %>% dplyr::count(hospid) %>% filter(n >= 10) %>%
   select(hospid) %>% 
   left_join(lupus_data) -> lupus_data_10
 
-# TODO: Update this next code chunk to include the new failure variables.
-# 
 hosp_data <- dat %>% 
   group_by(hospid) %>% 
   summarise_at(vars(teach, highvolume, bedsize, hosp_region),
