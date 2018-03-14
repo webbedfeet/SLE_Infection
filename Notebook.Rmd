@@ -112,3 +112,14 @@ The idea we will now investigate is to create an overall prediction model just b
 each hospital as to the observed/expected ratios for lupus and non-lupus patients. The ratio of the ratios will give us the "lupus effect" for the hospital. The E's should give us a sense of the case mix at each hospital, i.e., are particular hospitals getting more severe patients. 
 
 I need to think about this and what the implications of this are, specially with interpretation. 
+
+## March 9, 2018
+
+After further discussions with Mike, we resolved that the real scientific questions are:
+
+1. Which hospitals are poor in terms of sepsis deaths, or, in other words, if I had my choice, where would I go and where would I avoid, in terms of hospital characteristics?
+2. Are there hospitals where lupus patients are worse, or better, off than non-lupus patients. 
+
+So getting an overall predictive model for death risk, and using that as the expecteds for both non-lupus and lupus patients (don't use 
+lupus as a predictor), and then characterizing hospitals, is the strategy we'll follow, even though it's obvious we'll have some attenuation in effect sizes due to the relative frequencies of different hospitals.
+
