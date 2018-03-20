@@ -64,6 +64,8 @@ hosp_data <- (lupus_data %>% group_by(hospid) %>% summarise(lupus_sepsis = n()))
   right_join(hosp_data)
 
 
+saveRDS(dat, file = file.path(datadir, 'data','rda','exp_sepsis2','dat.rds'), compress = T)
+saveRDS(hosp_data, file = file.path(datadir,'data','rda','exp_sepsis2','hosp_data.rds'), compress=T)
 save(dat, lupus_data, lupus_data_10, nonlupus_data, hosp_data,
      file = file.path(datadir,'data','rda','exp_sepsis2','data.rda'), 
      compress = T)
