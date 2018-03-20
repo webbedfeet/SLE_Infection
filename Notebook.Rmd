@@ -123,3 +123,7 @@ After further discussions with Mike, we resolved that the real scientific questi
 So getting an overall predictive model for death risk, and using that as the expecteds for both non-lupus and lupus patients (don't use 
 lupus as a predictor), and then characterizing hospitals, is the strategy we'll follow, even though it's obvious we'll have some attenuation in effect sizes due to the relative frequencies of different hospitals.
 
+## March 20, 2018
+
++ Can't we use predictive modeling strategies to evaluate the overall excess risk among lupus patients by comparing models with
+and without lupus?
