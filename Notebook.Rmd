@@ -8,49 +8,49 @@ output: html_notebook
 
 # Background
 
-This study looks at the risk of mortality among patients admitted to 
+This study looks at the risk of mortality among patients admitted to
 hospital with infection, and whether there are any differences between patients identified with SLE vs those who are not. The mortality rate
-has to be adjusted by the case-mix as well as by variability between hospitals. This is done in the literature using a random intercept logistic model. In fact, we could do a fully Bayesian model and fully 
+has to be adjusted by the case-mix as well as by variability between hospitals. This is done in the literature using a random intercept logistic model. In fact, we could do a fully Bayesian model and fully
 assess the model using partial pooling. There may be a need for assessing
-prior sensitivity, specially of the intercept variable component. 
+prior sensitivity, specially of the intercept variable component.
 
 # Project plan
 
-We are looking first at SLE patients and then characterizing mortality rates at hospitals where 
-they arrive with an infection. We will first do a no-pooling model and then a partial pooling 
+We are looking first at SLE patients and then characterizing mortality rates at hospitals where
+they arrive with an infection. We will first do a no-pooling model and then a partial pooling
 model grouping within hospital adjusting for the case-mix. We will report (Table 2) the distribution
-of the estimated hospital intercept terms under a crude unadjusted model, a no-pooling model and a 
+of the estimated hospital intercept terms under a crude unadjusted model, a no-pooling model and a
 partial pooling model (where you get shrinkage of the estimates due to borrowed strength)
 
 The next analysis asks how the hospital effects (random intercepts) vary by group-level covariates (like number of beds, region and the like)
 
 Third, we compare the experience of SLE patients with non-SLE patients to ascertain whether hospitals
 are bad in general or only with SLE patients. This can be done using separate partial pooling models on the two groups, adjusted for case-mix, or by doing a random-intercept, random interaction model of hospital x SLE, to see this. One wrinkle in this is that in the first
-analysis comorbidities were recorded by a SLE-specific score. For the comparison analysis we need to use a common comorbidity score, `elix_score` instead of `slecomb`. 
+analysis comorbidities were recorded by a SLE-specific score. For the comparison analysis we need to use a common comorbidity score, `elix_score` instead of `slecomb`.
 
-Details and data dictionary are in docs/Hospital variation in mortality in serious infections in SLE.docx. 
+Details and data dictionary are in docs/Hospital variation in mortality in serious infections in SLE.docx.
 
 
 
 # Software considerations
 
 ## R
- The easiest option for fitting the random intercept logistic is using `lme4::glmer` or `arm`. For a fully Bayesian treatment of the model we could formulate it using JAGS, but it might be easier to use `stan`  through the `rstanarm` package. 
- 
+ The easiest option for fitting the random intercept logistic is using `lme4::glmer` or `arm`. For a fully Bayesian treatment of the model we could formulate it using JAGS, but it might be easier to use `stan`  through the `rstanarm` package.
+
 __Resources__:
 
 1. _Multilevel Modeling Using R_ by Finch, Bolin and Kelley
 2. [Hierarchical Models with RStan](https://biologyforfun.wordpress.com/2016/11/10/hierarchical-models-with-rstan-part-1/)
 3. `ggmcmc` package for plotting MCMC diagnostics
-4. `MCMCglmm` 
+4. `MCMCglmm`
 5. `glmmBUGS`
 6. [RStanArm vignette on HGLM](https://cran.rstudio.com/web/packages/rstanarm/vignettes/glmer.html)
 data
 
 ## Python
 
-In Python, we can use either `PyStan` (see [this example](http://mc-stan.org/users/documentation/case-studies/radon.html)) or `PyMC3` (same example [done here](http://twiecki.github.io/blog/2014/03/17/bayesian-glms-3/)) to do the Bayesian 
-analysis. 
+In Python, we can use either `PyStan` (see [this example](http://mc-stan.org/users/documentation/case-studies/radon.html)) or `PyMC3` (same example [done here](http://twiecki.github.io/blog/2014/03/17/bayesian-glms-3/)) to do the Bayesian
+analysis.
 
 __Resources__
 
@@ -65,7 +65,7 @@ __Resources__
 ## July 26, 2017
 
 An interesting aspect of the data is how hospitals with poor prognoses for nonlupus
-patients will often do worse for lupus patients. This was evidenced by the following 
+patients will often do worse for lupus patients. This was evidenced by the following
 graph:
 
 ```{r}
@@ -76,48 +76,64 @@ ggplot(hosp_data, aes(x = lupus_mortality, y = nonlupus_mortality))+geom_point()
   geom_abline()
 ```
 It appears that once lupus mortality in a hospital is greater than 20%, it is __always__ worse than nonlupus mortality, whereas for hospitals with lupus mortality
-less than 20%, there appears to be pretty much randomness about whether lupus or 
-non-lupus mortality is higher. 
+less than 20%, there appears to be pretty much randomness about whether lupus or
+non-lupus mortality is higher.
 
 Turns out that the best predictor of lupus mortality greater than 20% is the proportion of lupus patients admitted on a ventilator.
 
 ## August 7, 2017
 
-The idea is to see at the hospital level how lupus mortality relates to non-lupus (or nominal) 
-mortality. Conceptually, we could consider _a priori_ that a lupus patient would experience the 
+The idea is to see at the hospital level how lupus mortality relates to non-lupus (or nominal)
+mortality. Conceptually, we could consider _a priori_ that a lupus patient would experience the
 same chance of death as a non-lupus patient, and then see how many excess deaths we observe in lupus
 patients. This approach would account for the 0 death hospitals, since even under the non-lupus rate, seeing 0 events would not be unusual. Can we take a Bayesian approach to seeing whether
-lupus patients have excess risk. 
+lupus patients have excess risk.
 
-Alternatively, we could fit an ecological model on the non-lupus data to see how well we could predict mortality based on hospital-level factors, and then look at the counterfactual effect in the lupus patients. This should be able to give us the average treatment effect for being admitted as a lupus patient. 
+Alternatively, we could fit an ecological model on the non-lupus data to see how well we could predict mortality based on hospital-level factors, and then look at the counterfactual effect in the lupus patients. This should be able to give us the average treatment effect for being admitted as a lupus patient.
 
-The main idea has to be to see how unlikely the observed numbers of events are under the assumption that there is no difference between the mortality rates in lupus and non-lupus patients admitted with sepsis. This can certainly be done on a hospital-by-hospital basis, but it may be more useful to model the non-lupus mortality in terms of hospital characteristics and then score the lupus admissions using this model. Then we might use something like a Standardized Mortality Rate (SMR) to evaluate how different the observed number of deaths are from the expected number of deaths under the non-lupus model. 
+The main idea has to be to see how unlikely the observed numbers of events are under the assumption that there is no difference between the mortality rates in lupus and non-lupus patients admitted with sepsis. This can certainly be done on a hospital-by-hospital basis, but it may be more useful to model the non-lupus mortality in terms of hospital characteristics and then score the lupus admissions using this model. Then we might use something like a Standardized Mortality Rate (SMR) to evaluate how different the observed number of deaths are from the expected number of deaths under the non-lupus model.
 
-Alternatively, at the individual level, we could see if there is a lupus status by hospital interaction (or a random slope model) that would indicate differences between the lupus and non-lupus groups in terms of mortality rate. This could be done under a hierarchical logistic model including patient data from each hospital. 
+Alternatively, at the individual level, we could see if there is a lupus status by hospital interaction (or a random slope model) that would indicate differences between the lupus and non-lupus groups in terms of mortality rate. This could be done under a hierarchical logistic model including patient data from each hospital.
 
 A third idea would be to use a estimate from non-lupus mortality (via empirical estimates or modeling), and then proceed with a microsimulation to see how often we would see the number of deaths we saw in each hospital
 
-4. If there is truly no difference between lupus and non-lupus death rates, the distribution of p-values from the independent tests should be U(0,1). This is a testable hypothesis using a Kolmogorov test, for example. 
+4. If there is truly no difference between lupus and non-lupus death rates, the distribution of p-values from the independent tests should be U(0,1). This is a testable hypothesis using a Kolmogorov test, for example.
 
-One issue is that this is purely an observational study, with no randomization involved. However, we could conceptually get permutation p-values to ascertain whether the two groups are similar or not. 
+One issue is that this is purely an observational study, with no randomization involved. However, we could conceptually get permutation p-values to ascertain whether the two groups are similar or not.
 
 Are there meta-analytic methods we could use? In fact, we could assume that the hospitals are a random subset of all hospitals in the US (since this is from NIS), and then look at the difference in rates, aggregating using a random effects meta-analysis. We could also add a meta-regression to this question, since there appears to be some relationship with the frequency with which patients are put on a ventilator (as a surrogate for the severity of infection).
 
 ## March 1, 2018
 
 In the process of writing the paper, Mike found that we should probably look at some additional variables. He also updated the data
-to include two more ICD-10 codes, so we got one more hospital in the dataset. 
+to include two more ICD-10 codes, so we got one more hospital in the dataset.
 
-The idea we will now investigate is to create an overall prediction model just based on individual characteristics. We then look within 
-each hospital as to the observed/expected ratios for lupus and non-lupus patients. The ratio of the ratios will give us the "lupus effect" for the hospital. The E's should give us a sense of the case mix at each hospital, i.e., are particular hospitals getting more severe patients. 
+The idea we will now investigate is to create an overall prediction model just based on individual characteristics. We then look within
+each hospital as to the observed/expected ratios for lupus and non-lupus patients. The ratio of the ratios will give us the "lupus effect" for the hospital. The E's should give us a sense of the case mix at each hospital, i.e., are particular hospitals getting more severe patients.
 
-I need to think about this and what the implications of this are, specially with interpretation. 
+I need to think about this and what the implications of this are, specially with interpretation.
+
+
+## March 9, 2018
+
+After further discussions with Mike, we resolved that the real scientific questions are:
+
+1. Which hospitals are poor in terms of sepsis deaths, or, in other words, if I had my choice, where would I go and where would I avoid, in terms of hospital characteristics?
+2. Are there hospitals where lupus patients are worse, or better, off than non-lupus patients.
+
+So getting an overall predictive model for death risk, and using that as the expecteds for both non-lupus and lupus patients (don't use
+lupus as a predictor), and then characterizing hospitals, is the strategy we'll follow, even though it's obvious we'll have some attenuation in effect sizes due to the relative frequencies of different hospitals.
+
+## March 20, 2018
+
++ Can't we use predictive modeling strategies to evaluate the overall excess risk among lupus patients by comparing models with
+and without lupus?
 
 ### A first principles idea
 
-For each hospital, we can get a permutation pvalue of the chance that lupus patients are more likely to die, even adjusted for other covariates. It would be interesting as a descriptive to 
-see if any of the covariates are associated with lupus status; if not, this gets at the direct effect of lupus on death. 
+For each hospital, we can get a permutation pvalue of the chance that lupus patients are more likely to die, even adjusted for other covariates. It would be interesting as a descriptive to
+see if any of the covariates are associated with lupus status; if not, this gets at the direct effect of lupus on death.
 
-We can also assess extreme case mixes by permuting hospitals, generate a null distribution of each 
-potential surrogate for severity, and see if particular hospitals are more likely to have 
-more severe patients beyond chance. _Can we do this in a multivariate way accomodating all predictors at once?_ 
+We can also assess extreme case mixes by permuting hospitals, generate a null distribution of each
+potential surrogate for severity, and see if particular hospitals are more likely to have
+more severe patients beyond chance. _Can we do this in a multivariate way accomodating all predictors at once?_
