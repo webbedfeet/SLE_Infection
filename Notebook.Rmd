@@ -112,3 +112,12 @@ The idea we will now investigate is to create an overall prediction model just b
 each hospital as to the observed/expected ratios for lupus and non-lupus patients. The ratio of the ratios will give us the "lupus effect" for the hospital. The E's should give us a sense of the case mix at each hospital, i.e., are particular hospitals getting more severe patients. 
 
 I need to think about this and what the implications of this are, specially with interpretation. 
+
+### A first principles idea
+
+For each hospital, we can get a permutation pvalue of the chance that lupus patients are more likely to die, even adjusted for other covariates. It would be interesting as a descriptive to 
+see if any of the covariates are associated with lupus status; if not, this gets at the direct effect of lupus on death. 
+
+We can also assess extreme case mixes by permuting hospitals, generate a null distribution of each 
+potential surrogate for severity, and see if particular hospitals are more likely to have 
+more severe patients beyond chance. _Can we do this in a multivariate way accomodating all predictors at once?_ 
