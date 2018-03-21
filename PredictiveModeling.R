@@ -5,6 +5,7 @@
 #                                                          #
 ##%######################################################%##
 
+#+ setup, include=FALSE
 ProjTemplate::reload()
 dat <- readRDS(file.path(datadir, 'data','rda','exp_sepsis2','dat.rds'))
 
@@ -14,4 +15,18 @@ dat <- readRDS(file.path(datadir, 'data','rda','exp_sepsis2','dat.rds'))
 #' 
 #' The individual-level predictors we'll use for this analysis are
 #' age, race, year, zipinc_qrtl, elix_score, male, payer, ventialator and various failures. 
-#' We'll then add second-level hospital characteristics to refine estimates
+#' We'll then add second-level hospital characteristics to refine estimates. In this process we
+#' are intentionally ignoring the within-hospital / within-survey clustering of individuals. We may
+#' return to this later using a GLMM approach with binary outcomes, but it's very complicated for 
+#' now. 
+#" 
+#' ### Random Forest
+#' 
+#' 
+#' ### XGBoost
+#' 
+#' 
+#' ### Logistic Regression
+#' 
+#' 
+#' 
