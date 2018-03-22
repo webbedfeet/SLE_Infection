@@ -7,7 +7,19 @@
 
 #+ setup, include=FALSE
 ProjTemplate::reload()
-dat <- readRDS(file.path(datadir, 'data','rda','exp_sepsis2','dat.rds'))
+dat <- readRDS(file.path(datadir, 'data','rda','exp_sepsis2','dat.rds')) 
+dat <- dat %>% 
+  mutate(dead = as.numeric(as.character(dead)),
+         race = as.factor(ifelse(race >=4, 'other',race)))
+indiv_dat <- dat %>% 
+  select(dead, age, race, zipinc_qrtl, elix_score, male, ventilator, starts_with("failure"))
+bl <- dummyVars(dead ~ ., data=indiv_dat, fullRank = T)
+indiv_dat1 <- data.frame(predict(bl, newdata = indiv_dat))
+bl <- preProcess(indiv_dat1, method = c('center','scale','knnImpute'))
+indiv_dat1 <- predict(bl, newdata = indiv_dat1)
+indiv_dat1 <- cbind(dead = dat$dead, indiv_dat1)
+
+
 
 #' We are developing a predictive model for the risk of death upon admission with sepsis, 
 #' regardless of lupus status. This is an "overall" predictive model and would give us 
@@ -20,10 +32,17 @@ dat <- readRDS(file.path(datadir, 'data','rda','exp_sepsis2','dat.rds'))
 #' return to this later using a GLMM approach with binary outcomes, but it's very complicated for 
 #' now. 
 #" 
+#' ### XGBoost
+
+set.seed(1028)
+train_xgb <- train(dead ~ ., dat = indiv_dat1, method = 'xgbTree', 
+                   trControl = trainControl(method = 'cv',
+                                            number = 10))
+
+
 #' ### Random Forest
 #' 
 #' 
-#' ### XGBoost
 #' 
 #' 
 #' ### Logistic Regression
