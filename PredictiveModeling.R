@@ -15,9 +15,15 @@ indiv_dat <- dat %>%
   select(dead, age, race, zipinc_qrtl, elix_score, male, ventilator, starts_with("failure"))
 bl <- dummyVars(dead ~ ., data=indiv_dat, fullRank = T)
 indiv_dat1 <- data.frame(predict(bl, newdata = indiv_dat))
-bl <- preProcess(indiv_dat1, method = c('center','scale','knnImpute'))
+bl <- preProcess(indiv_dat1, method = c('center','scale','knnImpute')) # kNN imputation of missing data
 indiv_dat1 <- predict(bl, newdata = indiv_dat1)
 indiv_dat1 <- cbind(dead = dat$dead, indiv_dat1)
+saveRDS(indivd_dat1, file = file.path(datadir,'data','rda','exp_sepsis2','knnData.rds'), compress=T)
+
+#' One thing to note here is that there is about 15% missing data in some of the individual variables,
+#' which we are imputing with kNN to complete the data set
+
+# TODO: Do sensitivity analysis between imputation and listwise deletion of data. 
 
 
 
