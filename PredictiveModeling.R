@@ -33,7 +33,7 @@ out2 = cbind(out2, 'hospid' = dat$hospid[ind], 'lupus' = dat$lupus[ind])
 write_csv(out2, 'indivdat2.csv')
 
 
-x#' We are developing a predictive model for the risk of death upon admission with sepsis, 
+#' We are developing a predictive model for the risk of death upon admission with sepsis, 
 #' regardless of lupus status. This is an "overall" predictive model and would give us 
 #' our best guess as to what the chance of dying is purely on patient characteristics. 
 #' 
@@ -49,14 +49,16 @@ x#' We are developing a predictive model for the risk of death upon admission wi
 #' This is done in predictive_modeling.py. We should be able to use `reticulate` here
 
 results <- read_csv('results.csv')
-results <- results %>% mutate_if(is.integer, funs(as.factor(ifelse(.==0,'No','Yes'))))
-results2=results %>% mutate(RR = factor(ifelse(RR >= 2, 1,0)))
-m2 = rpart::rpart(RR~., data = results2, control = rpart.control(minsplit = 10, cp = 0.005))
-m2
-rpart.plot::prp(m2, type = 4, extra = 4)
+results <- results %>% mutate_at(vars(highvolume:bed3), funs(as.factor(ifelse(.==0,'No','Yes'))))
+results2=results %>% mutate(RR = factor(ifelse(RR >= 2, 1,0))) %>% select(-hospid)
+prp(rpart(RR ~ region+type+bedsize+highvolume, 
+          data=results2, 
+          control=rpart.control(cp=0.001, maxdepth = 2)), type=4,extra=1)
 
-
-
+m3 <- rpart(RR~ region + type + bedsize + highvolume, 
+            data = results2 %>% filter(RR_value > 0),
+            control = rpart.control(cp=0.001, maxdepth=4))
+prp(m3, type = 4)
 #' ### Random Forest
 #' 
 #' 
