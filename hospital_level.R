@@ -1,6 +1,6 @@
 # Ecological analysis at hospital level
 
-source('lib/reload.R'); reload()
+ProjTemplate::reload()
 load(file.path(datadir, 'data','rda','data.rda'))
 
 ## relation between lupus and non-lupus mortality
