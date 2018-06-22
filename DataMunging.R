@@ -87,26 +87,34 @@ dat <- dat %>%
          race = as.factor(ifelse(race >= 4, 'other',race)))
 indiv_dat <- dat %>% 
   select(dead, age, race, zipinc_qrtl, elix_score, male, ventilator, starts_with("failure"))
-bl <- dummyVars(dead ~ ., data=indiv_dat, fullRank = T)
+bl <- dummyVars(dead ~ . -1, data=indiv_dat)
 indiv_dat1 <- data.frame(predict(bl, newdata = indiv_dat))
 
-# knn imputation of missing data
-# This centers and scales continuous predictors, and then performs kNN imputation on the missing values
-bl <- preProcess(indiv_dat1, method = c('center','scale','knnImpute')) 
-indiv_dat1 <- predict(bl, newdata = indiv_dat1)
-indiv_dat1 <- cbind(dead = dat$dead, indiv_dat1)
+# # knn imputation of missing data
+# # This centers and scales continuous predictors, and then performs kNN imputation on the missing values
+# bl <- preProcess(indiv_dat1, method = c('center','scale','knnImpute')) 
+# indiv_dat1 <- predict(bl, newdata = indiv_dat1)
+# indiv_dat1 <- cbind(dead = dat$dead, indiv_dat1)
 
+# MICE imputation
+library(mice)
+ms = c('', rep('logreg',8), 'pmm',rep('logreg',14))
+miceMod <- mice(indiv_dat1, m = 3, method = ms)
+indiv_dat1_imputed = mice::complete(miceMod)
+indiv_dat1_imputed <- cbind(dead = indiv_dat$dead, indiv_dat1_imputed)
 
-saveRDS(indiv_dat1, file = file.path(datadir,'data','rda','exp_sepsis2','knnData.rds'), compress = T)
+saveRDS(indiv_dat1_imputed, file = file.path(datadir,'data','rda','exp_sepsis2','imputedData.rds'), compress = T)
+write_csv(indiv_dat1_imputed, 'indiv_dat1.csv')
+
+## Save without race 
+indiv_dat2_imputed <- select(indiv_dat1_imputed, -starts_with('race'))
+write_csv(indiv_dat2_imputed, 'indiv_dat2.csv')
+
 
 # Listwise deletion of missing values
 
 indiv_dat2 <- indiv_dat %>% filter(complete.cases(indiv_dat))
 saveRDS(indiv_dat2, file = file.path(datadir, 'data','rda','exp_sepsis2','listwiseData.rds'), compress = T)
-
-# MICE imputation
-library(mice)
-miceMod <- mice(indiv_dat, m = 1, method = 'rf')
 
 
 # Modal value imputation
