@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score, accuracy_score
 
-dat = pd.read_csv('indivdat.csv')
+dat = pd.read_csv('indiv_dat1.csv')
 indiv = dat.drop(['hospid','lupus'], axis=1)
 X, y = indiv.drop('dead',axis=1).values, indiv['dead'].values
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,random_state=50)
