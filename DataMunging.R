@@ -101,7 +101,7 @@ library(mice)
 ms = c('', rep('logreg',8), 'pmm',rep('logreg',14))
 miceMod <- mice(indiv_dat1, m = 3, method = ms)
 indiv_dat1_imputed = mice::complete(miceMod)
-indiv_dat1_imputed <- cbind(dead = indiv_dat$dead, indiv_dat1_imputed)
+indiv_dat1_imputed <- cbind(select(dat, dead, hospid, lupus), indiv_dat1_imputed)
 
 saveRDS(indiv_dat1_imputed, file = file.path(datadir,'data','rda','exp_sepsis2','imputedData.rds'), compress = T)
 write_csv(indiv_dat1_imputed, 'indiv_dat1.csv')
