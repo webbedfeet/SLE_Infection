@@ -4,6 +4,8 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score, accuracy_score
+import matplotlib.pyplot as plt
+
 pd.__version__
 dat = pd.read_csv('indiv_dat1.csv') # Generated in DataMunging.R
 indiv = dat.drop(['hospid','lupus'], axis=1)
@@ -51,9 +53,27 @@ results['RR'] = results[1]/results[0]
 results
 results = results.loc[~pd.isna(results.RR),:]
 results.shape
+bl2=dat[dat.lupus==0].groupby('hospid').size()
+bl3 = dat[dat.lupus==0].groupby('hospid')['dead'].mean()
+bl3.head()
+blah = pd.concat([results, bl2, bl3], axis = 1)
+blah.columns = ['0','1','RR','N','NonLupusMort']
+blah.head()
+roc_auc_score(dat.dead, dat.risk)
+
+blah.plot(x = 'NonLupusMort', y = 'RR', kind='scatter')
+plt.show()
+
+plt.scatter(blah.N, blah.NonLupusMort); plt.show()
+import seaborn as sns
+sns.regplot('NonLupusMort', 'RR', data=blah[blah.RR>0], lowess=True)
+plt.plot([0,0.35],[1,1])
+plt.show()
+
 ######################################################################
 
 ## Not using race
+
 dat1 = pd.read_csv('indiv_dat2.csv')
 indiv1 = dat1.drop(['hospid','lupus'], axis=1)
 X1, y1 = indiv1.drop('dead',axis=1).values, indiv1['dead'].values
