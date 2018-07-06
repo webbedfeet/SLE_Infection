@@ -5,10 +5,13 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 #from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score, accuracy_score
 import matplotlib.pyplot as plt
+<<<<<<< HEAD
 import seaborn as sns
 
+=======
 
-dat = pd.read_csv('indiv_dat1.csv')
+pd.__version__
+dat = pd.read_csv('indiv_dat1.csv') # Generated in DataMunging.R
 indiv = dat.drop(['hospid','lupus'], axis=1)
 X, y = indiv.drop('dead',axis=1).values, indiv['dead'].values
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,random_state=50)
@@ -43,7 +46,6 @@ risk = clf.predict(X)
 #risk = clf.predict_proba(X)[:,1]
 
 dat['risk'] = risk
-
 bl=(dat.
         groupby(['hospid','lupus'])[['risk','dead']].
         aggregate(np.sum))
@@ -55,23 +57,33 @@ bl.head()
 results = bl.pivot(index= 'hospid', columns='lupus',
         values = 'OE')
 results['RR'] = results[1]/results[0]
-results.head()
+results = results.loc[~pd.isna(results.RR),:]
+results.shape
+bl2=dat[dat.lupus==0].groupby('hospid').size()
+bl3 = dat[dat.lupus==0].groupby('hospid')['dead'].mean()
+bl3.head()
+blah = pd.concat([results, bl2, bl3], axis = 1)
+blah.columns = ['0','1','RR','N','NonLupusMort']
+blah.head()
+roc_auc_score(dat.dead, dat.risk)
 
-blah=dat.groupby('hospid')['dead'].aggregate(np.mean)
-pd.concat([results['RR'], blah], axis = 1).plot.scatter(x = 'dead', y = 'RR')
+blah.plot(x = 'NonLupusMort', y = 'RR', kind='scatter')
 plt.show()
 
-dat.groupby(['hospid','lupus']).size().reset_index().pivot(index = 'hospid', columns = 'lupus')
-
-results = results.loc[~pd.isna(results.RR),:]
+plt.scatter(blah.N, blah.NonLupusMort); plt.show()
+import seaborn as sns
+sns.regplot('NonLupusMort', 'RR', data=blah[blah.RR>0], lowess=True)
+plt.plot([0,0.35],[1,1])
+plt.show()
 
 ######################################################################
 
 ## Not using race
-dat1 = pd.read_csv('indivdat2.csv')
-indiv1 = dat1.drop(['highvolume','hospid','lupus'], axis=1)
+
+dat1 = pd.read_csv('indiv_dat2.csv')
+indiv1 = dat1.drop(['hospid','lupus'], axis=1)
 X1, y1 = indiv1.drop('dead',axis=1).values, indiv1['dead'].values
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,random_state=50)
+X_train, X_test, y_train, y_test = train_test_split(X1, y1, test_size=0.2,random_state=50)
 
 dFull1 = xgb.DMatrix(X1, y1)
 dTrain = xgb.DMatrix(X_train, y_train)
@@ -83,13 +95,13 @@ params = {'eta':0.1,
         'objective': 'binary:logistic'}
 cvresult1 = xgb.cv(params, dFull1, num_boost_round=500, nfold=5, early_stopping_rounds = 5, seed = 2049, metrics=['auc'])
 
-clf1 = xgb.XGBClassifier(max_depth = 6,
+clf1 = xgb.XGBRegressor(max_depth = 6,
         learning_rate = 0.1,
         subsample = 1,
         seed = 2049,
         n_estimators = 50)
 clf1.fit(X1,y1)
-risk1 = clf1.predict_proba(X1)[:,1]
+risk1 = clf1.predict(X1)
 
 dat1['risk'] = risk1
 
