@@ -7,8 +7,17 @@
 
 #+ setup, include=FALSE
 ProjTemplate::reload()
+
+
+
+# Read original data ---------------------------------------------------------------
+
+
+dat <- haven::read_sas(file.path(datadir,'data','raw','exp_sepsis2.sas7bdat')) %>% 
+  set_names(tolower(names(.))) %>% 
+  mutate(key = as.character(key))
+
 # See DataMunging for the data to do this.
-?
 
 #' We are developing a predictive model for the risk of death upon admission with sepsis,
 #' regardless of lupus status. This is an "overall" predictive model and would give us
@@ -25,23 +34,47 @@ ProjTemplate::reload()
 
 #' This is done in predictive_modeling.py. We should be able to use `reticulate` here
 
-results <- read_csv('results.csv')
-results <- results %>% mutate_at(vars(highvolume:bed3), funs(as.factor(ifelse(.==0,'No','Yes'))))
-results2=results %>% mutate(RR = factor(ifelse(RR >= 2, 1,0))) %>% select(-hospid)
-prp(rpart(RR ~ region+type+bedsize+highvolume,
-          data=results2,
-          control=rpart.control(cp=0.001, maxdepth = 2)), type=4,extra=1)
+file.copy('indiv_dat1_risk.csv', file.path(datadir, 'data','indiv_dat1_risk.csv'))
+file.copy('indiv_dat2_risk.csv', file.path(datadir, 'data','indiv_dat2_risk.csv'))
 
-m3 <- rpart(RR~ region + type + bedsize + highvolume,
-            data = results2 %>% filter(RR_value > 0),
-            control = rpart.control(cp=0.001, maxdepth=4))
-prp(m3, type = 4)
-#' ### Random Forest
-#'
-#'
-#'
-#'
-#' ### Logistic Regression
-#'
-#'
-#'
+indiv1_risk <- read_csv(file.path(datadir,'data','indiv_dat1_risk.csv'))
+bl <- indiv1_risk %>% group_by(hospid, lupus) %>% 
+  summarize(obs = sum(dead), expect = sum(risk)) %>% 
+  ungroup() %>% 
+  mutate(oe = obs/expect) %>% 
+  select(hospid, oe, lupus) %>% 
+  spread(lupus, oe) %>% 
+  mutate(RR = `1`/`0`) %>% 
+  select(hospid, RR) %>% 
+  left_join(
+    indiv1_risk %>% 
+      filter(lupus == 0) %>% 
+      group_by(hospid) %>% 
+      summarize(mr = mean(dead)) %>% 
+      ungroup()) %>% 
+  left_join(
+    dat %>% mutate(hospid = as.integer(hospid)) %>% 
+      group_by(hospid, year) %>% summarize(N = n()) %>% ungroup() %>% 
+      group_by(hospid) %>% summarize(avgN = mean(N)) %>% ungroup())
+
+ggplot(bl, aes(x = mr, y = RR))+geom_point(aes(size = avgN)) +
+  geom_smooth(data = bl %>% filter(RR>0), aes(mr, RR), se = T) +
+  scale_y_continuous('Relative SMR of lupus patients', breaks = c(0,0.5,1:8))+
+  scale_size('# patients (annual)', breaks = c(0,50,100, 500, 1000, 2000, 5000), range = c(1,10))+
+  geom_hline(yintercept = c(0.5, 1,2), linetype = c(2,1,2), color = 'red') +
+  geom_vline(xintercept = c(0.1, 0.166), linetype = 2) + # quartiles
+  labs(x = 'Non-lupus mortality rate')
+
+## Histogram of RR = 0 hospitals and size
+
+annual_lupus <- dat %>% mutate(hospid = as.integer(hospid)) %>% 
+  group_by(hospid, year) %>% summarise(lup = sum(lupus)) %>% ungroup() %>% 
+  group_by(hospid) %>% summarize(avglup = mean(lup)) %>% ungroup()
+bl %>% left_join(annual_lupus) %>% 
+  mutate(lupratio = avglup/avgN)%>% filter(RR==0) %>% 
+  ggplot(aes(x = avgN, y = lupratio))+geom_point()
+bl %>% left_join(annual_lupus) %>% 
+  ggplot(aes(avglup, RR))+geom_point()+geom_hline(yintercept = 2)+
+  labs(x = 'Avg number of lupus sepsis patients', 
+       y = 'Relative SMR of lupus patients')
+

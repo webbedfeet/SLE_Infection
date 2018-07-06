@@ -7,7 +7,6 @@ from sklearn.metrics import roc_auc_score, accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-=======
 
 pd.__version__
 dat = pd.read_csv('indiv_dat1.csv') # Generated in DataMunging.R
@@ -45,6 +44,8 @@ risk = clf.predict(X)
 #risk = clf.predict_proba(X)[:,1]
 
 dat['risk'] = risk
+dat.to_csv('indiv_dat1_risk.csv', index = False)
+
 bl=(dat.
         groupby(['hospid','lupus'])[['risk','dead']].
         aggregate(np.sum))
@@ -66,6 +67,7 @@ blah.columns = ['0','1','RR','N','NonLupusMort']
 blah.head()
 roc_auc_score(dat.dead, dat.risk)
 
+
 blah.plot(x = 'NonLupusMort', y = 'RR', kind='scatter')
 plt.show()
 
@@ -75,6 +77,7 @@ sns.regplot('NonLupusMort', 'RR', data=blah[blah.RR>0], lowess=True)
 plt.plot([0,0.35],[1,1])
 plt.show()
 
+blah.to_csv('Hosp_indiv1_results.csv', index = False)
 ######################################################################
 
 ## Not using race
@@ -98,11 +101,12 @@ clf1 = xgb.XGBRegressor(max_depth = 6,
         learning_rate = 0.1,
         subsample = 1,
         seed = 2049,
-        n_estimators = 50)
+        n_estimators = 20)
 clf1.fit(X1,y1)
 risk1 = clf1.predict(X1)
 
 dat1['risk'] = risk1
+dat1.to_csv('indiv_dat2_risk.csv', index = False)
 
 from sklearn.metrics import roc_auc_score
 
@@ -114,6 +118,8 @@ bl=(dat1.
 bl['OE'] = bl['dead']/bl['risk']
 bl = bl.reset_index()
 
+bl.to_csv('Hosp_indiv2_results.csv', index=False)
+
 results = bl.pivot(index= 'hospid', columns='lupus',
         values = 'OE')
 results['RR'] = results[1]/results[0]
@@ -121,20 +127,21 @@ results = results.reset_index()
 
 ## Looking at hospital characteristics
 
-bl1 = dat1[['hospid','highvolume','northeast','midwest','south','west', 'rural','smallurban','largeurban','bed1','bed2','bed3']]
-bl2 = results[['hospid','RR']]
-blah = bl1.set_index('hospid').join(bl2.set_index('hospid')).reset_index().drop_duplicates()
+# bl1 = dat1[['hospid','highvolume','northeast','midwest','south','west', 'rural','smallurban','largeurban','bed1','bed2','bed3']]
+# bl2 = results[['hospid','RR']]
+# blah = bl1.set_index('hospid').join(bl2.set_index('hospid')).reset_index().drop_duplicates()
+# 
+# 
+# 
+# from sklearn import tree
+# from sklearn.tree import DecisionTreeRegressor
+# import graphviz
+# 
+# dt = DecisionTreeRegressor(max_depth=3, min_samples_leaf=5)
+# dt.fit(blah.drop('RR', axis=1).values, blah.RR.values)
+# 
+# dot_data = tree.export_graphviz(dt, out_file=None,
+#         feature_names = blah.columns[:-1])
+# graph = graphviz.Source(dot_data)
+# graph
 
-from sklearn import tree
-from sklearn.tree import DecisionTreeRegressor
-import graphviz
-
-dt = DecisionTreeRegressor(max_depth=3, min_samples_leaf=5)
-dt.fit(blah.drop('RR', axis=1).values, blah.RR.values)
-
-dot_data = tree.export_graphviz(dt, out_file=None,
-        feature_names = blah.columns[:-1])
-graph = graphviz.Source(dot_data)
-graph
-
-blah.to_csv('results.csv', index=False)
