@@ -2,9 +2,13 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.ensemble import RandomForestClassifier
+#from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score, accuracy_score
 import matplotlib.pyplot as plt
+<<<<<<< HEAD
+import seaborn as sns
+
+=======
 
 pd.__version__
 dat = pd.read_csv('indiv_dat1.csv') # Generated in DataMunging.R
@@ -37,20 +41,22 @@ clf = xgb.XGBRegressor(max_depth = 6,
         subsample = 1,
         seed = 2049,
         n_estimators = 20)
-clf.fit(X,y)
+clf.fit(X,y);
 risk = clf.predict(X)
+#risk = clf.predict_proba(X)[:,1]
 
 dat['risk'] = risk
 bl=(dat.
         groupby(['hospid','lupus'])[['risk','dead']].
         aggregate(np.sum))
+
 bl['OE'] = bl['dead']/bl['risk']
 bl = bl.reset_index()
+bl.head()
 
 results = bl.pivot(index= 'hospid', columns='lupus',
         values = 'OE')
 results['RR'] = results[1]/results[0]
-results
 results = results.loc[~pd.isna(results.RR),:]
 results.shape
 bl2=dat[dat.lupus==0].groupby('hospid').size()
