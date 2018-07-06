@@ -7,31 +7,8 @@
 
 #+ setup, include=FALSE
 ProjTemplate::reload()
-dat <- readRDS(file.path(datadir, 'data','rda','exp_sepsis2','dat.rds'))
-dat <- dat %>%
-  mutate(dead = as.numeric(as.character(dead)),
-         race = as.factor(ifelse(race >=4, 5,race)))
-
-indiv_dat <- dat %>%
-  select(dead, race, year, male, elix_score, highvolume, medicare:age_60plus, rural:largeurban,
-         bed1:bed3)
-ind <- complete.cases(indiv_dat)
-out <- as.data.frame(model.matrix(~. -1, data = indiv_dat))
-out <- cbind(out, 'hospid'=dat$hospid[ind], 'lupus'=dat$lupus[ind])
-# bl <- preProcess(indiv_dat1, method = c('center','scale','knnImpute'))
-# indiv_dat1 <- predict(bl, newdata = indiv_dat1)
-indiv_dat1 <- cbind(dead = dat$dead, indiv_dat1)
-indiv_dat2 <- indiv_dat1[complete.cases(indiv_dat1),]
-write_csv(out, 'indivdat.csv')
-
-indiv2 <- dat %>%
-  select(dead, year, male, elix_score, highvolume, medicare:age_60plus,
-         rural:largeurban, bed1:bed3)
-ind = complete.cases(indiv2)
-out2 = as.data.frame(model.matrix(~.-1, data=indiv2))
-out2 = cbind(out2, 'hospid' = dat$hospid[ind], 'lupus' = dat$lupus[ind])
-write_csv(out2, 'indivdat2.csv')
-
+# See DataMunging for the data to do this.
+?
 
 #' We are developing a predictive model for the risk of death upon admission with sepsis,
 #' regardless of lupus status. This is an "overall" predictive model and would give us
