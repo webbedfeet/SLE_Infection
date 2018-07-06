@@ -2,8 +2,11 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.ensemble import RandomForestClassifier
+#from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score, accuracy_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 dat = pd.read_csv('indiv_dat1.csv')
 indiv = dat.drop(['hospid','lupus'], axis=1)
@@ -30,25 +33,35 @@ model = xgb.train(
 cvresult = xgb.cv(params, dFull, num_boost_round=500, nfold=5, early_stopping_rounds = 5, seed = 2049, metrics=['auc'])
 
 params['n_estimators'] = 20
-clf = xgb.XGBClassifier(max_depth = 6,
+clf = xgb.XGBRegressor(max_depth = 6,
         learning_rate = 0.1,
         subsample = 1,
         seed = 2049,
         n_estimators = 20)
-clf.fit(X,y)
-risk = clf.predict_proba(X)[:,1]
+clf.fit(X,y);
+risk = clf.predict(X)
+#risk = clf.predict_proba(X)[:,1]
 
 dat['risk'] = risk
 
 bl=(dat.
         groupby(['hospid','lupus'])[['risk','dead']].
         aggregate(np.sum))
+
 bl['OE'] = bl['dead']/bl['risk']
 bl = bl.reset_index()
+bl.head()
 
-results = bl.pivot(index= 'hospid', columns='lupus', 
+results = bl.pivot(index= 'hospid', columns='lupus',
         values = 'OE')
 results['RR'] = results[1]/results[0]
+results.head()
+
+blah=dat.groupby('hospid')['dead'].aggregate(np.mean)
+pd.concat([results['RR'], blah], axis = 1).plot.scatter(x = 'dead', y = 'RR')
+plt.show()
+
+dat.groupby(['hospid','lupus']).size().reset_index().pivot(index = 'hospid', columns = 'lupus')
 
 results = results.loc[~pd.isna(results.RR),:]
 
@@ -90,7 +103,7 @@ bl=(dat1.
 bl['OE'] = bl['dead']/bl['risk']
 bl = bl.reset_index()
 
-results = bl.pivot(index= 'hospid', columns='lupus', 
+results = bl.pivot(index= 'hospid', columns='lupus',
         values = 'OE')
 results['RR'] = results[1]/results[0]
 results = results.reset_index()
