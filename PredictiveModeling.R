@@ -37,6 +37,23 @@ dat <- haven::read_sas(file.path(datadir,'data','raw','exp_sepsis2.sas7bdat')) %
 file.copy('indiv_dat1_risk.csv', file.path(datadir, 'data','indiv_dat1_risk.csv'))
 file.copy('indiv_dat2_risk.csv', file.path(datadir, 'data','indiv_dat2_risk.csv'))
 
+## Calibration of the model
+indiv1_risk %>% 
+  mutate(risk_cat = cut(risk, seq(0,1, by = 0.1), include.lowest = T, right = T)) %>%
+  group_by(risk_cat) %>% 
+  summarize(avgDeath = mean(dead), # Avg mortality rate for each group of predicted values
+            avgPred = mean(risk)) %>% # Avg prediction for each group of predicted values
+  ungroup() -> bl #
+ggplot(bl, aes(avgPred, avgDeath))+geom_point() + geom_abline() + 
+  labs(x = 'Predicted mortality', y = 'Observed mortality')
+  
+## AUC of the predictions
+
+library(ROCR)
+auc <- performance(prediction(indiv1_risk$risk, as.factor(indiv1_risk$dead)),'auc')
+glue::glue('{auc@y.name}: {round(auc@y.values[[1]],3)}')
+
+
 indiv1_risk <- read_csv(file.path(datadir,'data','indiv_dat1_risk.csv'))
 bl <- indiv1_risk %>% group_by(hospid, lupus) %>% 
   summarize(obs = sum(dead), expect = sum(risk)) %>% 
@@ -73,6 +90,8 @@ annual_lupus <- dat %>% mutate(hospid = as.integer(hospid)) %>%
 bl %>% left_join(annual_lupus) %>% 
   mutate(lupratio = avglup/avgN)%>% filter(RR==0) %>% 
   ggplot(aes(x = avgN, y = lupratio))+geom_point()
+
+## Lupus sepsis experience as a factor in poor outcomes in hospitals
 bl %>% left_join(annual_lupus) %>% 
   ggplot(aes(avglup, RR))+geom_point()+geom_hline(yintercept = 2)+
   labs(x = 'Avg number of lupus sepsis patients', 
