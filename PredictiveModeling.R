@@ -97,3 +97,5 @@ bl %>% left_join(annual_lupus) %>%
   labs(x = 'Avg number of lupus sepsis patients', 
        y = 'Relative SMR of lupus patients')
 
+library(GGally)
+ggpairs(left_join(bl, annual_lupus), columns = c(3:5,2))
