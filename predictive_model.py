@@ -58,18 +58,33 @@ dat['risk'] = risk
 dat.to_csv('indiv_dat1_risk.csv', index = False)
 shutil.copy2('indiv_dat1_risk.csv', os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data'))
 
+# TODO: Make computation of RR into a function
+# TODO: Run bootstrap to get RR for each hospital
 
-bl=(dat.
-        groupby(['hospid','lupus'])[['risk','dead']].
-        aggregate(np.sum))
+def compute_RR(d):
+    """
+    USAGE:
+    compute_RR(d)
+    
+    RESULT:
+    A Series object with hospital ID as index and containing the RR
+    
+    Take the full data set, including hospid and risk scores, and 
+    compute the ratio of SMRs based on the risk scores as 'expecteds'. 
+    """
+    bl = (d.
+             groupby(['hospid', 'lupus'])[['risk','dead']].
+             aggregate(np.sum))
+    bl['OE'] = bl['dead']/bl['risk']
+    bl = bl.reset_index()
+    results = bl.pivot(index = 'hospid', columns = 'lupus', values = 'OE')
+    results['RR'] = results[1]/results[0]
+#    results.set_index('hospid')
+    results = results['RR']
+    return(results)
 
-bl['OE'] = bl['dead']/bl['risk']
-bl = bl.reset_index()
-bl.head()
+results = compute_RR(dat)
 
-results = bl.pivot(index= 'hospid', columns='lupus',
-        values = 'OE')
-results['RR'] = results[1]/results[0]
 results = results.loc[~pd.isna(results.RR),:]
 results.shape
 bl2=dat[dat.lupus==0].groupby('hospid').size()
@@ -94,51 +109,56 @@ plt.show()
 blah.to_csv('Hosp_indiv1_results.csv', index = False)
 ######################################################################
 
+# Bootstrapping to capture uncertainty of estimates
+
+def model_scoring(d):
+    
+         
 ## Not using race
 
-dat1 = pd.read_csv('indiv_dat2.csv')
-indiv1 = dat1.drop(['hospid','lupus'], axis=1)
-X1, y1 = indiv1.drop('dead',axis=1).values, indiv1['dead'].values
-X_train, X_test, y_train, y_test = train_test_split(X1, y1, test_size=0.2,random_state=50)
-
-dFull1 = xgb.DMatrix(X1, y1)
-dTrain = xgb.DMatrix(X_train, y_train)
-dTest = xgb.DMatrix(X_test, y_test)
-
-params = {'eta':0.1,
-        'max_depth':6,
-        'subsample':1,
-        'objective': 'binary:logistic'}
-cvresult1 = xgb.cv(params, dFull1, num_boost_round=500, nfold=5, early_stopping_rounds = 5, seed = 2049, metrics=['auc'])
-
-clf1 = xgb.XGBRegressor(max_depth = 6,
-        learning_rate = 0.1,
-        subsample = 1,
-        seed = 2049,
-        n_estimators = 20)
-clf1.fit(X1,y1)
-risk1 = clf1.predict(X1)
-
-dat1['risk'] = risk1
-dat1.to_csv('indiv_dat2_risk.csv', index = False)
-
-from sklearn.metrics import roc_auc_score
-
-roc_auc_score(dat1.dead, dat1.risk)
-
-bl=(dat1.
-        groupby(['hospid','lupus'])[['risk','dead']].
-        aggregate(np.sum))
-bl['OE'] = bl['dead']/bl['risk']
-bl = bl.reset_index()
-
-bl.to_csv('Hosp_indiv2_results.csv', index=False)
-
-results = bl.pivot(index= 'hospid', columns='lupus',
-        values = 'OE')
-results['RR'] = results[1]/results[0]
-results = results.reset_index()
-
+## dat1 = pd.read_csv('indiv_dat2.csv')
+## indiv1 = dat1.drop(['hospid','lupus'], axis=1)
+## X1, y1 = indiv1.drop('dead',axis=1).values, indiv1['dead'].values
+## X_train, X_test, y_train, y_test = train_test_split(X1, y1, test_size=0.2,random_state=50)
+## 
+## dFull1 = xgb.DMatrix(X1, y1)
+## dTrain = xgb.DMatrix(X_train, y_train)
+## dTest = xgb.DMatrix(X_test, y_test)
+## 
+## params = {'eta':0.1,
+##         'max_depth':6,
+##         'subsample':1,
+##         'objective': 'binary:logistic'}
+## cvresult1 = xgb.cv(params, dFull1, num_boost_round=500, nfold=5, early_stopping_rounds = 5, seed = 2049, metrics=['auc'])
+## 
+## clf1 = xgb.XGBRegressor(max_depth = 6,
+##         learning_rate = 0.1,
+##         subsample = 1,
+##         seed = 2049,
+##         n_estimators = 20)
+## clf1.fit(X1,y1)
+## risk1 = clf1.predict(X1)
+## 
+## dat1['risk'] = risk1
+## dat1.to_csv('indiv_dat2_risk.csv', index = False)
+## 
+## from sklearn.metrics import roc_auc_score
+## 
+## roc_auc_score(dat1.dead, dat1.risk)
+## 
+## bl=(dat1.
+##         groupby(['hospid','lupus'])[['risk','dead']].
+##         aggregate(np.sum))
+## bl['OE'] = bl['dead']/bl['risk']
+## bl = bl.reset_index()
+## 
+## bl.to_csv('Hosp_indiv2_results.csv', index=False)
+## 
+## results = bl.pivot(index= 'hospid', columns='lupus',
+##         values = 'OE')
+## results['RR'] = results[1]/results[0]
+## results = results.reset_index()
+## 
 ## Looking at hospital characteristics
 
 # bl1 = dat1[['hospid','highvolume','northeast','midwest','south','west', 'rural','smallurban','largeurban','bed1','bed2','bed3']]
