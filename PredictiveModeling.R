@@ -34,7 +34,7 @@ dat <- haven::read_sas(file.path(datadir,'data','raw','exp_sepsis2.sas7bdat')) %
 
 #' This is done in predictive_modeling.py. We should be able to use `reticulate` here
 
-file.copy('indiv_dat1_risk.csv', file.path(datadir, 'data','indiv_dat1_risk.csv'))
+file.copy('indiv_dat1_risk.csv', file.path(datadir, 'data','indiv_dat1_risk.csv'), overwrite = T)
 file.copy('indiv_dat2_risk.csv', file.path(datadir, 'data','indiv_dat2_risk.csv'))
 
 indiv1_risk <- read_csv(file.path(datadir,'data','indiv_dat1_risk.csv'))
@@ -91,22 +91,26 @@ bl %>% left_join(annual_lupus) %>% filter(RR == 0) %>%
   gather(variable, value, mr:avglup) %>% 
   ggplot(aes(value))+geom_histogram(bins = 15) + 
   facet_wrap(~ variable, ncol = 1, scales='free')
-bl %>% mutate(nomort = factor(ifelse(RR==0, 1, 0))) %>% 
-  ggplot(aes(x = nomort, y = mr))+geom_boxplot()
-bl %>% mutate(nomort = factor(ifelse(RR == 0, 1, 0))) %>% 
-  wilcox.test(avgN ~ nomort, data = .)
-bl %>% mutate(nomort = factor(ifelse(RR == 0, 1, 0))) %>% 
-  wilcox.test(mr ~ nomort, data = .)
-bl %>% left_join(annual_lupus) %>% mutate(nomort = ifelse(RR == 0, 1, 0)) %>% 
-  wilcox.test(avglup ~ nomort, data = .)
+### Statistical comparison of hospital outcomes by no mortality status
+bl %>% left_join(annual_lupus) %>% 
+  mutate(no_mort = factor(ifelse(RR == 0, 1, 0))) %>% 
+  gather(variable, value, mr:avglup) %>% 
+  nest(-variable) %>% 
+  mutate(p.value = map_dbl(data, ~broom::tidy(wilcox.test(value ~ no_mort, data = .))$p.value)) %>% 
+  select(-data)
 bl %>% left_join(annual_lupus) %>% mutate(nomort = factor(ifelse(RR == 0 ,1 , 0))) %>% 
-  ggplot(aes(x = nomort, y = avglup))+geom_boxplot()
-## Patterns between different hospital-level metrics
+  ggplot(aes(x = nomort, y = mr))+geom_boxplot()
 
 bl %>% left_join(annual_lupus) %>% 
   mutate(lupratio = avglup/avgN)%>% filter(RR==0) %>% 
   ggplot(aes(x = avgN, y = lupratio))+geom_point()
 
+bl %>% left_join(annual_lupus) %>% 
+  mutate(lupratio = avglup/avgN) %>%
+  mutate(no_mort = factor(ifelse(RR == 0, 1, 0))) %>% 
+  ggplot(aes(x = no_mort, y = lupratio))+geom_boxplot()
+  
+  
 ## Lupus sepsis experience as a factor in poor outcomes in hospitals
 bl %>% left_join(annual_lupus) %>% 
   ggplot(aes(avglup, RR))+geom_point()+geom_hline(yintercept = 2)+
