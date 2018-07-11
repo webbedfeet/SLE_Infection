@@ -14,6 +14,7 @@ indiv = dat.drop(['hospid','lupus'], axis=1)
 X, y = indiv.drop('dead',axis=1).values, indiv['dead'].values
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,random_state=50)
 
+# Model training
 dFull = xgb.DMatrix(X, y)
 dTrain = xgb.DMatrix(X_train, y_train)
 dTest = xgb.DMatrix(X_test, y_test)
@@ -21,30 +22,42 @@ dTest = xgb.DMatrix(X_test, y_test)
 params = {'eta':0.1,
         'max_depth':6,
         'subsample':1,
-        'objective': 'binary:logistic'}
+        'objective': 'binary:logistic',
+        }
 #params['eval_metric'] = roc_auc_score
 
-model = xgb.train(
-        params,
-        dTrain,
-        evals = [(dTest,"Test")],
-        early_stopping_rounds = 5
-        )
+#model = xgb.train(
+#        params,
+#        dTrain,
+#        evals = [(dTest,"Test")],
+#        early_stopping_rounds = 5, 
+#        num_boost_round= 20
+#        )
 
 cvresult = xgb.cv(params, dFull, num_boost_round=500, nfold=5, early_stopping_rounds = 5, seed = 2049, metrics=['auc'])
 
-params['n_estimators'] = 20
+# 10 rounds gets to 99.7% of max test AUC
+params['n_estimators'] = 10
 clf = xgb.XGBRegressor(max_depth = 6,
+        objective = 'binary:logistic',
         learning_rate = 0.1,
         subsample = 1,
         seed = 2049,
-        n_estimators = 20)
+        n_estimators = 10)
 clf.fit(X,y);
-risk = clf.predict(X)
-#risk = clf.predict_proba(X)[:,1]
+import joblib
+joblib.dump(clf, 'PredictedModel.joblib.dat')
+# clf = joblib.load('PredictedModel.dat')
+import shutil
+import os
+shutil.copy2('PredictedModel.joblib.dat', os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data'))
 
+# Predictions from model
+risk = clf.predict(X)
 dat['risk'] = risk
 dat.to_csv('indiv_dat1_risk.csv', index = False)
+shutil.copy2('indiv_dat1_risk.csv', os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data'))
+
 
 bl=(dat.
         groupby(['hospid','lupus'])[['risk','dead']].
@@ -75,6 +88,7 @@ plt.scatter(blah.N, blah.NonLupusMort); plt.show()
 import seaborn as sns
 sns.regplot('NonLupusMort', 'RR', data=blah[blah.RR>0], lowess=True)
 plt.plot([0,0.35],[1,1])
+plt.plot([0,0.35], [2,2], 'r)
 plt.show()
 
 blah.to_csv('Hosp_indiv1_results.csv', index = False)
