@@ -1,0 +1,22 @@
+---
+title: "Report"
+author: "Abhijit"
+date: "7/12/2018"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+ProjTemplate::reload()
+dat <- readRDS(file.path(datadir,'data','rda','exp_sepsis2','full_data.rds'))
+indiv1_risk <- read_csv(file.path(datadir,'data','indiv_dat1_risk.csv'))
+hosp_data <- readRDS(file.path(datadir, 'data','rda','exp_sepsis2','hosp_risk.rds'))
+mortality <- indiv1_risk %>% group_by(hospid) %>% summarise(mr = mean(dead))
+```
+
+# Abstract Results
+
+Among `r length(unique(dat$hospid))` hospitals that treated a total of `r format(nrow(dat), big.mark = ',')` patients with sepsis, of whom `r sum(dat$lupus)` had SLE, the risk of in-hospital mortality varied from `r format(round(100*min(mortality$mr),2), nsmall = 2)`% to `r format(round(100*max(mortality$mr),2),nsmall = 2)`% (median = `r round(100*median(mortality$mr))`%). We used machine learning methods to derive expected risks of death, based on age, gender, socio-economic status, comorbidities and ventilator use, and used these risk estimates to 
+compute the expected number of deaths at each hospital by SLE status. This was then used to compute an observed/expected ratio for SLE and non-SLE patients. The ratio of the these ratios (SLE/non-SLE), denoted RR,  was used to estimate the excess risk of SLE on mortality within hospitals. The RR ranged from `r round(min(hosp_data$RR),2)` to `r round(max(hosp_data$RR),2)`. with a median of `r round(median(hosp_data$RR),2)`. `r round(100*mean(hosp_data$RR >= 2),2)`% of the hospitals had a RR of at least 2, indicating that patients with SLE and sepsis were more than twice as likely to die than predicted based on their risk factors. [Add results of tree here]
+
+# Statistical methods
+
