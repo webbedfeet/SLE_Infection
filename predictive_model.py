@@ -6,6 +6,8 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import roc_auc_score, accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
+import operator
+import joblib
 
 
 pd.__version__
@@ -33,7 +35,18 @@ params = {'eta':0.1,
 #        early_stopping_rounds = 5,
 #        num_boost_round= 20
 #        )
-
+def create_feature_map(features):
+	outfile = open('xgb.fmap', 'w')
+	i = 0
+	for feat in features:
+		outfile.write('{0}\t{1}\tq\n'.format(i, feat))
+		i = i + 1
+	outfile.close()
+ftrs = list(np.array(indiv.drop('dead', axis = 1).columns))
+features = ['Age','White','Black','Hispanic','Other','SES_Q1','SES_Q2','SES_Q3','SES_Q4','Elixhauser', 'Female','Male', 'Ventilator','Ventilator',
+    'Cardiac fail','Cardiac fail','Neuro fail','Neuro fail', 'Heme fail','Heme fail','Liver fail','Liver fail',
+    'Renal fail','Renal fail']
+create_feature_map(ftrs)
 cvresult = xgb.cv(params, dFull, num_boost_round=500, nfold=5, early_stopping_rounds = 5, seed = 2049, metrics=['auc'])
 
 # 10 rounds gets to 99.7% of max test AUC
@@ -44,7 +57,7 @@ clf = xgb.XGBRegressor(max_depth = 6,
         subsample = 1,
         seed = 2049,
         n_estimators = 10)
-clf.fit(X,y);
+clf.fit(X,y)
 import joblib
 joblib.dump(clf, 'PredictedModel.joblib.dat')
 # clf = joblib.load('PredictedModel.dat')
@@ -52,6 +65,15 @@ import shutil
 import os
 shutil.copy2('PredictedModel.joblib.dat', os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data'))
 
+# Feature importances
+importance = clf.booster().get_score(fmap = 'xgb.fmap', importance_type = 'gain')
+importance = sorted(importance.items(), key = operator.itemgetter(1))
+df_importance = pd.DataFrame(importance, columns = ['feature','fscore'])
+df_importance['feature'] = pd.Series(['SES_Q2','SES_Q4','Hispanic','Female','SES_Q3','SES_Q1','Other race','Neuro fail','Black','White','Age','Renal fail','Liver fail','Elixhauser','Heme failure','Cardiac failure','Ventilator'])
+plt.figure()
+df_importance[df_importance.fscore > 10].plot()
+df_importance[df_importance.fscore > 10].plot(kind = 'barh', x = 'feature',y = 'fscore', legend = False)
+plt.gcf().savefig('feature_importances.png')
 # Predictions from model
 risk = clf.predict(X)
 dat['risk'] = risk
