@@ -119,3 +119,31 @@ bl %>% left_join(annual_lupus) %>%
 
 library(GGally)
 ggpairs(left_join(bl, annual_lupus), columns = c(3:5,2))
+
+
+
+# Bootstrap variability of RRs ----------------------------------------------------------------
+
+bootstraps <- read_csv(file.path(datadir,'data','bootstrapRR1.csv'))
+summaries <- bootstraps %>% 
+  summarize_all(funs(Q1 = quantile(., 0.25, na.rm=T),
+                     Median = quantile(., 0.5, na.rm=T),
+                     Q3 = quantile(., 0.75, na.rm=T),
+                     LCB = quantile(., 0.025, na.rm=T),
+                     UCB = quantile(., 0.975, na.rm = T),
+                     Mean = mean(., na.rm=T),
+                     SD = sd(., na.rm=T),
+                     Max = max(., na.rm = T),
+                     Min = min(., na.rm = T))) %>% 
+  gather() %>% 
+  separate(key, c('hospid','stat'), sep = '_') %>% 
+  spread(stat, value) %>% 
+  mutate(Range = Max - Min,
+         IQR = Q3 - Q1)
+
+SDs <- bootstraps %>% summarize_all(funs(sd(., na.rm=T))) %>% t()
+ranges <- bootstraps %>% summarize_all(funs(mins = min(., na.rm=T), maxs = max(., na.rm=T))) %>% 
+  gather() %>% 
+  separate(key, c('hospid','stat'), sep='_') %>% 
+  spread(stat, value) 
+ggplot(ranges,aes(mins, maxs)) +geom_point()
