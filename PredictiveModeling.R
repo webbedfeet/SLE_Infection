@@ -82,6 +82,7 @@ ggplot(bl, aes(x = mr, y = RR))+geom_point(aes(size = avgN)) +
   geom_hline(yintercept = c(0.5, 1,2), linetype = c(2,1,2), color = 'red') +
   geom_vline(xintercept = c(0.1, 0.166), linetype = 2) + # quartiles
   labs(x = 'Non-lupus mortality rate')
+
 annual_lupus <- dat %>% mutate(hospid = as.integer(hospid)) %>% 
   group_by(hospid, year) %>% summarise(lup = sum(lupus)) %>% ungroup() %>% 
   group_by(hospid) %>% summarize(avglup = mean(lup)) %>% ungroup()
@@ -121,7 +122,7 @@ library(GGally)
 ggpairs(left_join(bl, annual_lupus), columns = c(3:5,2))
 
 
-
+bl <- bl %>% left_join(annual_lupus)
 # Bootstrap variability of RRs ----------------------------------------------------------------
 
 bootstraps <- read_csv(file.path(datadir,'data','bootstrapRR1.csv'))
@@ -147,3 +148,31 @@ ranges <- bootstraps %>% summarize_all(funs(mins = min(., na.rm=T), maxs = max(.
   separate(key, c('hospid','stat'), sep='_') %>% 
   spread(stat, value) 
 ggplot(ranges,aes(mins, maxs)) +geom_point()
+
+
+# Tree-building -------------------------------------------------------------------------------
+
+hosp_risk <- summarize_all(bootstraps, funs(mean(. > 2, na.rm = T))) %>% gather() %>% 
+  set_names(c('hospid','risk'))
+bl <- bl %>% mutate(hospid = as.character(hospid))
+hosp_data <- readRDS(file.path(datadir, 'data','rda','exp_sepsis2','hosp_data.rds'))
+hosp_data <- hosp_data %>% left_join(hosp_risk) %>% left_join(bl) %>% 
+  mutate(high_RR = ifelse(RR > 2, 1, 0)) %>% 
+  rename(Mortality_rate = mr,
+         Sepsis_yr = avgN,
+         Lupus_Sepsis_yr = avglup)
+saveRDS(hosp_data, file = file.path(datadir, 'data','rda','exp_sepsis2','hosp_risk.rds'), compress = T)
+library(rpart)
+library(rpart.plot)       
+
+tree_dat1 <- hosp_data %>% 
+  select( teach, highvolume, bedsize, hosp_region,
+         Mortality_rate, Sepsis_yr, Lupus_Sepsis_yr, risk)
+tree1 <- rpart(risk ~ . , data = tree_dat1)
+prp(tree1, type = 2)
+
+tree_dat2 <- hosp_data %>% 
+  select(teach, highvolume, bedsize, hosp_region, Mortality_rate, Sepsis_yr, Lupus_Sepsis_yr,
+         high_RR)
+tree2 = rpart(as.factor(high_RR) ~. , data = tree_dat2)
+prp(tree2, type = 4)
