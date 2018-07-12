@@ -2,7 +2,9 @@
 title: "Report"
 author: "Abhijit"
 date: "7/12/2018"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include = FALSE}
@@ -18,5 +20,38 @@ mortality <- indiv1_risk %>% group_by(hospid) %>% summarise(mr = mean(dead))
 Among `r length(unique(dat$hospid))` hospitals that treated a total of `r format(nrow(dat), big.mark = ',')` patients with sepsis, of whom `r sum(dat$lupus)` had SLE, the risk of in-hospital mortality varied from `r format(round(100*min(mortality$mr),2), nsmall = 2)`% to `r format(round(100*max(mortality$mr),2),nsmall = 2)`% (median = `r round(100*median(mortality$mr))`%). We used machine learning methods to derive expected risks of death, based on age, gender, socio-economic status, comorbidities and ventilator use, and used these risk estimates to 
 compute the expected number of deaths at each hospital by SLE status. This was then used to compute an observed/expected ratio for SLE and non-SLE patients. The ratio of the these ratios (SLE/non-SLE), denoted RR,  was used to estimate the excess risk of SLE on mortality within hospitals. The RR ranged from `r round(min(hosp_data$RR),2)` to `r round(max(hosp_data$RR),2)`. with a median of `r round(median(hosp_data$RR),2)`. `r round(100*mean(hosp_data$RR >= 2),2)`% of the hospitals had a RR of at least 2, indicating that patients with SLE and sepsis were more than twice as likely to die than predicted based on their risk factors. [Add results of tree here]
 
-# Statistical methods
+# Statistical analysis
+
+The unit of analysis was the hospital. We limited the analyses to hospitals that 
+had five or more sepsis-related hospitalizations among patients with SLE. This number represented a balance between including a large number of hospitals while also not characterizing hospitals based on the outcomes of very few patients. 
+
+We computed the observed (crude) mortality frequency among patients with SLE and those without SLE at each hospital. We then compared the observed mortality risks in both groups relative to their expected mortality risk, which we based on the outcomes of patients treated for sepsis in the same set of hospitals. This measure provided an assessment of whether patients with SLE had higher, lower or similar mortality risks to those of other patients in the same hospital who were also admitted with sepsis. 
+
+To obtain the expected number of deaths, we modeled the risk of death among all patients with sepsis, using patient-level data on age, gender, race, Elixhouser score, the presence of each of the six organ dysfunction indicators,  socio-economic index and ventilator use (modeling details are provided below). We use this model to predict the risk (or probability) of death for each patient using the observed covariates for that patient. This gives the risk of death for each patient under the assumption that they had the same conditional risk of death as other patients with the same risk factors. Adding these predicted probabilities for patients in a given hospital gives the expected number of deaths (E) among patients with SLE, and separately, the expected number of deaths among patients without SLE. We then compared the observed number of deaths (O) to at each hospital with the expected number of deaths in each patient group. The O/E ratio is therefore a standardized mortality ratio. Finally, to characterize relative performance in treating patients with SLE, we compared the ratio of these two ratios within hospitals, as:
+
+We used machine learning methods to compute the expected probability of death. To flexibly model the conditional risk of death, we used the XGBoost algorithm (Python package xgboost version 0.8, Python version 3.6)[^1]. This modern form of gradient boosted regression trees uses gradient descent to optimize a lost function (here, the logistic loss function). Boosting helps reduce the bias that weak learners exhibit while maintaining the low variance characteristics of the weak learners. This method has been shown to produce low bias, low variance predictions on a wide variety of data sets, provided it is trained well. Boosted decision trees have been found to work well in lower-dimensional problems such as ours, and better than random forest models[^2]. Compared to observed deaths, the model predicted the lieklihood of mortality well, with an area under the receiver operating characteristic curve of 0.86. 
+
+A hospital with an RR of 1.0 would be one with an observed-to-expected mortality among patients with SLE and sepsis that was the same as that among patients without SLE at the same hospital. We chose an RR of 2.0 (i.e., twice the observed-to-expected ratio) to indicate hospitals that had excess mortality among patients with SLE admitted with sepsis. Because our analysis was conditional on the hospital, we didn't use NIS sampling weights. To assess the variability of our RR estimates, we drew 1000 bootstrap samples from the data and re-computed the RR, thus providing an estimate of the sampling distribution of the RR within each hospital. 
+
+We used classification and regression trees to identify hospital subsets with poorer relative SLE mortality (RR > 2). Hospitals were characterized by the probability that the hospital RR would exceed 2, i.e. the chance of having poor relative SLE mortality, based on the estimated sampling distributions from the bootstrapping procedure. This allows us to have a fairer comparison of hospitals. Candidate hospital characteristics used included hospital location/teaching status, region, size, SLE volume, average annual sepsis volume and average annual sepsis volume among SLE patients. 
+
+# Results
+
+```{r, include = F}
+lupus_freq <- dat %>% filter(lupus==1) %>% count(hospid)
+lupus_mort <- dat %>% filter(lupus == 1) %>% group_by(hospid) %>% 
+  summarize(dead = 100*mean(dead, na.rm=T))
+```
+
+
+We analyzed data from `r length(unique(dat$hospid))` hospitals that included `r sum(dat$lupus)` patients with sepsis and SLE, and `r format(sum(dat$lupus==0), big.mark=',')` hospitalizations of patients with sepsis without SLE. The number of hospitalizations of SLE patients per hospital ranged from `r min(lupus_freq$n)` to 
+`r max(lupus_freq$n)`. Patient characteristics are shown in Table 1. Across all hospitals, `r dat %>% filter(lupus==1) %>% summarize(dead = 100*mean(dead, na.rm=T)) %>% pull(dead) %>% round(2)`% of patients with SLE, and `r dat %>% filter(lupus==0) %>% summarize(dead = 100*mean(dead, na.rm=T)) %>% pull(dead) %>% round(2)`% of patients without SLE died during a hospitalization. The main predictors of mortality based on our machine learning model were ventilator use, Elixhouser score and presence of other organ dysfucntion (see supplemental figure 1). 
+
+Hospital-specific observed mortality among patients with SLE ranged from 0% (at `r sum(lupus_mort$dead==0)` hospitals) to `r max(lupus_mort$dead)`%, with a median of `r round(median(lupus_mort$dead),2)`%. The RR of relative SLE mortality ranged from 0 to 
+`r round(max(hosp_data$RR, na.rm=T),2)`, with a median of `r round(median(hosp_data$RR, na.rm=T),2)` (Figure 1). Therefore, in a hospital performing at the mid-range of all hospitals, patients with SLE were no more likely to die than patients without SLE when admitted with sepsis. 
+
+There were `r sum(hosp_data$RR >=2)` hospitals (`r round(100*mean(hosp_data$RR >=2),2)`%) with RR > 2.0, indicating mortality among patients with SLE was at least two times more likely than expected among patients without SLE. The most important hospital level predictors of the likelihood of a RR >2 were  mortality rate among non-SLE sepsis patients, and volume of SLE patients admitted with sepsis. 
+
+[^1]: Chen, Tianqi and Guestrin, Carlos (2016). XGBoost: A Scalable Tree Boosting System. Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, p. 785-894. 
+[^2]: Caruana R, Karampatziakis, N, Yessenalina A (2008). An empirical evaluation of supervised learning in high dimensions. In: International Conference on Machine Learning, p. 96-103
 
