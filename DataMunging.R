@@ -14,7 +14,7 @@ dat <- haven::read_sas(file.path(datadir,'data','raw','exp_sepsis2.sas7bdat')) %
   set_names(tolower(names(.))) %>% 
   mutate(key = as.character(key))
 
-
+saveRDS(dat, file = file.path(datadir, 'data','rda', 'exp_sepsis2', 'full_data.rds'), compress = T)
 
 # Data munging ------------------------------------------------------------
 
@@ -44,6 +44,12 @@ hosp_data <- dat %>%
   summarise_at(vars(teach, highvolume, bedsize, hosp_region),
                funs(max(.))) %>% 
   mutate_all( as.factor)
+## Hospital regions:
+## 1 = Northeast
+## 2 = Midwest
+## 3 = South
+## 4 = West
+
 
 hosp_data <- dat %>% group_by(hospid) %>% 
   summarise(n_sepsis = n()) %>% # Add number of sepsis cases in hospital
@@ -66,6 +72,7 @@ hosp_data <- lupus_data %>%
 hosp_data <- (lupus_data %>% group_by(hospid) %>% summarise(lupus_sepsis = n())) %>% 
   right_join(nonlupus_data %>% group_by(hospid) %>% summarise(nonlupus_sepsis = n())) %>% # Adding sepsis frequency
   right_join(hosp_data)
+hosp_data <- hosp_data %>% mutate(hospid = as.character(hospid))
 
 
 saveRDS(dat, file = file.path(datadir, 'data','rda','exp_sepsis2','dat.rds'), compress = T)
