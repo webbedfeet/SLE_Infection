@@ -53,18 +53,19 @@ dat %>% select(lupus, age, elix_score) %>% # Continuous variables
 
 
 library(table1)
-dat_for_tab1 <- dat %>% select(age, race, male,zipinc_qrtl, hosp_region, elix_score,lupus, ventilator,
-                               starts_with('failure')) %>% 
+dat_for_tab1 <- dat %>% select(age, male,zipinc_qrtl, hosp_region, elix_score,lupus, ventilator,
+                               starts_with('failure'), dead) %>% 
   mutate(lupus = ifelse(lupus == 0, 'No SLE','SLE'),
-         male = ifelse(male == 0, 'Female','Male')) %>% 
+         male = ifelse(male == 0, 'Female','Male'),
+         dead = ifelse(dead == 0, 'Alive','Dead')) %>% 
   mutate_at(vars(ventilator:failure_renal), funs(ifelse(.==0,'No','Yes'))) %>% 
   mutate(hosp_region = case_when(hosp_region == 1 ~ 'Northeast',
                                  hosp_region == 2 ~ 'Midwest',
                                  hosp_region == 3 ~ 'South',
                                  hosp_region == 4 ~ 'West')) %>% 
-  mutate_at(vars(race:hosp_region, lupus:failure_renal), as.factor)
+  mutate_at(vars(male:hosp_region, lupus:dead), as.factor)
 library(labelled)
-var_label(dat_for_tab1) <- list(race = 'Race', male = 'Gender', zipinc_qtrl = 'SES Quartile',
+var_label(dat_for_tab1) <- list( male = 'Gender', zipinc_qtrl = 'SES Quartile',
                                  hosp_region = 'Region', elix_score = 'Elixhauser score',
                                  ventilator = 'On ventilator',
                                  failure_cardiac = 'Cardiac failure',
@@ -72,6 +73,18 @@ var_label(dat_for_tab1) <- list(race = 'Race', male = 'Gender', zipinc_qtrl = 'S
                                  failure_heme = 'Hematologic failure',
                                  failure_liver = 'Liver failure',
                                  failure_renal = 'Renal failure')
-table1(~age + race + male + hosp_region + elix_score + ventilator + failure_cardiac + failure_neuro + failure_heme + failure_liver + failure_renal| lupus, data=dat_for_tab1,
+labs = list( variables = list(male = 'Gender', zipinc_qtrl = 'SES Quartile',
+             hosp_region = 'Region', elix_score = 'Elixhauser score',
+             ventilator = 'On ventilator',
+             failure_cardiac = 'Cardiac failure',
+             failure_neuro = 'Neurologic failure',
+             failure_heme = 'Hematologic failure',
+             failure_liver = 'Liver failure',
+             failure_renal = 'Renal failure'),
+             groups = list('No SLE','SLE','Overall'))
+table1(~age + male + hosp_region + elix_score + ventilator + failure_cardiac + failure_neuro + failure_heme + failure_liver + failure_renal| dead*lupus, data=dat_for_tab1,
        render.continuous = c(. = 'Mean (SD)'),
        render.categorical = c(. = 'PCT%'))
+
+
+       
