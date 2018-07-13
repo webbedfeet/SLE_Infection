@@ -1,0 +1,45 @@
+---
+title: "Untitled"
+author: "Abhijit"
+date: "7/13/2018"
+output:
+  html_document: 
+    css: [vignette.css,style.css]
+  word_document: default
+---
+
+```{r setup, include = F}
+ProjTemplate::reload()
+library(table1)
+library(labelled)
+dat <- readRDS(file.path(datadir,'data','rda','exp_sepsis2','full_data.rds'))
+```
+
+```{r, results = 'asis', echo = F}
+dat_for_tab1 <- dat %>% select(age, race, male,zipinc_qrtl, hosp_region, elix_score,lupus, ventilator,
+                               starts_with('failure')) %>% 
+  mutate(lupus = ifelse(lupus == 0, 'No SLE','SLE'),
+         male = ifelse(male == 0, 'Female','Male')) %>% 
+  mutate_at(vars(ventilator:failure_renal), funs(ifelse(.==0,'No','Yes'))) %>% 
+  mutate(hosp_region = case_when(hosp_region == 1 ~ 'Northeast',
+                                 hosp_region == 2 ~ 'Midwest',
+                                 hosp_region == 3 ~ 'South',
+                                 hosp_region == 4 ~ 'West')) %>% 
+  mutate_at(vars(race:hosp_region, lupus:failure_renal), as.factor)
+var_label(dat_for_tab1) <- list(race = 'Race', male = 'Gender', zipinc_qtrl = 'SES Quartile',
+                                 hosp_region = 'Region', elix_score = 'Elixhauser score',
+                                 ventilator = 'On ventilator',
+                                 failure_cardiac = 'Cardiac failure',
+                                 failure_neuro = 'Neurologic failure',
+                                 failure_heme = 'Hematologic failure',
+                                 failure_liver = 'Liver failure',
+                                 failure_renal = 'Renal failure')
+table1(~age + race + male + hosp_region + elix_score + ventilator + failure_cardiac + failure_neuro + failure_heme + failure_liver + failure_renal| lupus, data=dat_for_tab1,
+       render = function(x, name, ...){
+         render.default(x, name, missing = F, transpose = F,render.empty='',
+                        render.categorical = c(.='PCT%'),
+                        render.continuous = c(. = 'Mean (SD)'))
+       })
+
+```
+
