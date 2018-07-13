@@ -171,6 +171,9 @@ tree_dat1 <- hosp_data %>%
 tree1 <- rpart(risk ~ . , data = tree_dat1)
 prp(tree1, type = 2)
 
+tree1.1 <- rpart(risk~., data = tree_dat1 %>% select(-Lupus_Sepsis_yr)) #keep both 1 and 1.1
+prp(tree1.1, type = 2)
+
 tree_dat2 <- hosp_data %>% 
   select(teach, highvolume, bedsize, hosp_region, Mortality_rate, Sepsis_yr, Lupus_Sepsis_yr,
          high_RR)
