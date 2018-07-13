@@ -11,7 +11,7 @@ import joblib
 
 
 pd.__version__
-dat = pd.read_csv('indiv_dat1.csv') # Generated in DataMunging.R
+dat = pd.read_csv('indiv_dat2.csv') # Generated in DataMunging.R, no race
 indiv = dat.drop(['hospid','lupus'], axis=1)
 X, y = indiv.drop('dead',axis=1).values, indiv['dead'].values
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,random_state=50)
@@ -43,7 +43,7 @@ def create_feature_map(features):
 		i = i + 1
 	outfile.close()
 ftrs = list(np.array(indiv.drop('dead', axis = 1).columns))
-features = ['Age','White','Black','Hispanic','Other','SES_Q1','SES_Q2','SES_Q3','SES_Q4','Elixhauser', 'Female','Male', 'Ventilator','Ventilator',
+features = ['Age','SES_Q1','SES_Q2','SES_Q3','SES_Q4','Elixhauser', 'Female','Male', 'Ventilator','Ventilator',
     'Cardiac fail','Cardiac fail','Neuro fail','Neuro fail', 'Heme fail','Heme fail','Liver fail','Liver fail',
     'Renal fail','Renal fail']
 create_feature_map(ftrs)
@@ -66,10 +66,10 @@ import os
 shutil.copy2('PredictedModel.joblib.dat', os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data'))
 
 # Feature importances
-importance = clf.booster().get_score(fmap = 'xgb.fmap', importance_type = 'gain')
+importance = clf.get_booster().get_score(fmap = 'xgb.fmap', importance_type = 'gain')
 importance = sorted(importance.items(), key = operator.itemgetter(1))
 df_importance = pd.DataFrame(importance, columns = ['feature','fscore'])
-df_importance['feature'] = pd.Series(['SES_Q2','SES_Q4','Hispanic','Female','SES_Q3','SES_Q1','Other race','Neuro fail','Black','White','Age','Renal fail','Liver fail','Elixhauser','Heme failure','Cardiac failure','Ventilator'])
+df_importance['feature'] = pd.Series(['SES_Q2','SES_Q4','Gender','SES_Q1','Neuro fail','SES_Q3','Age','Renal fail','Liver fail','Elixhauser','Bone marrow failure','Cardiac failure','Ventilator'])
 plt.figure()
 df_importance[df_importance.fscore > 10].plot()
 df_importance[df_importance.fscore > 10].plot(kind = 'barh', x = 'feature',y = 'fscore', legend = False)

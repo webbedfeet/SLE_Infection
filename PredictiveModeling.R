@@ -13,9 +13,10 @@ ProjTemplate::reload()
 # Read original data ---------------------------------------------------------------
 
 
-dat <- haven::read_sas(file.path(datadir,'data','raw','exp_sepsis2.sas7bdat')) %>% 
-  set_names(tolower(names(.))) %>% 
-  mutate(key = as.character(key))
+dat <- readRDS(file.path(datadir,'data','rda','exp_sepsis2','full_data.rds')) 
+  # haven::read_sas(file.path(datadir,'data','raw','exp_sepsis2.sas7bdat')) %>% 
+  # set_names(tolower(names(.))) %>% 
+  # mutate(key = as.character(key))
 
 # See DataMunging for the data to do this.
 
