@@ -14,7 +14,7 @@ dat <- haven::read_sas(file.path(datadir,'data','raw','exp_sepsis2.sas7bdat')) %
   set_names(tolower(names(.))) %>% 
   mutate(key = as.character(key))
 
-saveRDS(dat, file = file.path(datadir, 'data','rda', 'exp_sepsis2', 'full_data.rds'), compress = T)
+
 
 # Data munging ------------------------------------------------------------
 
@@ -23,10 +23,13 @@ dat <- dat %>%
                  starts_with('failure'),
                  year, hospid), as.factor) %>% 
   mutate(year_scaled = scale(as.numeric(as.character(year)), center = T, scale = F)) %>% 
-  mutate(payer = case_when(medicare == 1 ~ 1,
-                           medicaid == 1 ~ 2,
-                           private == 1 ~ 3,
-                           otherins == 1 ~ 4))
+  mutate(payer = case_when(medicare == 1 ~ 'Medicare',
+                           medicaid == 1 ~ 'Medicaid',
+                           private == 1 ~ 'Private',
+                           otherins == 1 ~ 'Other')) %>% 
+  mutate(payer = factor(payer, levels = c('Medicare','Medicaid','Private','Other')))
+
+
 
 lupus_data <- dat %>% filter(lupus == 1)
 nonlupus_data <- dat %>% filter(lupus == 0)
@@ -75,7 +78,7 @@ hosp_data <- (lupus_data %>% group_by(hospid) %>% summarise(lupus_sepsis = n()))
 hosp_data <- hosp_data %>% mutate(hospid = as.character(hospid))
 
 
-saveRDS(dat, file = file.path(datadir, 'data','rda','exp_sepsis2','dat.rds'), compress = T)
+saveRDS(dat, file = file.path(datadir, 'data','rda','exp_sepsis2','full_dat.rds'), compress = T)
 saveRDS(hosp_data, file = file.path(datadir,'data','rda','exp_sepsis2','hosp_data.rds'), compress=T)
 save(dat, lupus_data, lupus_data_10, nonlupus_data, hosp_data,
      file = file.path(datadir,'data','rda','exp_sepsis2','data.rda'), 
