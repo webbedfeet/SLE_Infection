@@ -27,6 +27,7 @@ params = {'eta':0.1,
         'subsample':1,
         'objective': 'binary:logistic',
         }
+
 #params['eval_metric'] = roc_auc_score
 
 #model = xgb.train(
@@ -36,6 +37,7 @@ params = {'eta':0.1,
 #        early_stopping_rounds = 5,
 #        num_boost_round= 20
 #        )
+
 def create_feature_map(features):
 	outfile = open('xgb.fmap', 'w')
 	i = 0
@@ -45,6 +47,7 @@ def create_feature_map(features):
 	outfile.close()
 
 ftrs = list(np.array(indiv.drop('dead', axis = 1).columns))
+
 features = ['Age','SES_Q1','SES_Q2','SES_Q3','SES_Q4','Elixhauser', 'Female','Male', 'Ventilator','Ventilator',
     'Cardiac fail','Cardiac fail','Neuro fail','Neuro fail', 'Heme fail','Heme fail','Liver fail','Liver fail',
     'Renal fail','Renal fail']
@@ -62,10 +65,19 @@ clf = xgb.XGBRegressor(max_depth = 6,
 clf.fit(X,y)
 import joblib
 joblib.dump(clf, 'PredictedModel.joblib.dat')
-# clf = joblib.load('PredictedModel.dat')
+# clf = joblib.load('PredictedModel.joblib.dat')
 import shutil
 import os
 shutil.copy2('PredictedModel.joblib.dat', os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data'))
+
+# Calibration
+from sklearn.metrics import brier_score_loss
+p = clf.predict(X)
+brier_score_loss(y, p)
+from sklearn.calibration import calibration_curve
+frac_pos, mean_pred = calibration_curve(y, p, n_bins=10)
+plt.plot(mean_pred, frac_pos)
+plt.show()
 
 # Feature importances
 importance = clf.get_booster().get_score(fmap = 'xgb.fmap', importance_type = 'gain')
