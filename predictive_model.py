@@ -75,8 +75,8 @@ from sklearn.metrics import brier_score_loss
 p = clf.predict(X)
 brier_score_loss(y, p)
 from sklearn.calibration import calibration_curve
-frac_pos, mean_pred = calibration_curve(y, p, n_bins=10)
-plt.plot(mean_pred, frac_pos)
+frac_pos, mean_pred = calibration_curve(y, p, n_bins=20)
+plt.plot(mean_pred, frac_pos, 's-', [0,1],[0,1], 'k:')
 plt.show()
 
 # Feature importances
