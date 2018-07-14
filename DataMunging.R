@@ -119,7 +119,7 @@ write_csv(indiv_dat1_imputed, 'indiv_dat1.csv')
 ## Save without race 
 indiv_dat2_imputed <- select(indiv_dat1_imputed, -starts_with('race'))
 write_csv(indiv_dat2_imputed, 'indiv_dat2.csv')
-
+saveRDS(indiv_dat2_imputed, file = file.path(datadir, 'data','rda','exp_sepsis2','imputedDataNoRace.rds'), compress = T)
 
 # Listwise deletion of missing values
 
