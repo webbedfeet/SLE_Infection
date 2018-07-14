@@ -15,3 +15,6 @@ Rplot*
 *.tiff
 graphs/*
 *.xlsx
+*.dat
+PredictedModel.model
+.ipynb_checkpoints/predictive_model-checkpoint.py
