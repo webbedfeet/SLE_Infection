@@ -72,7 +72,7 @@ bl <- indiv1_risk %>% group_by(hospid, lupus) %>%
       summarize(mr = mean(dead)) %>% 
       ungroup()) %>% 
   left_join(
-    dat %>% mutate(hospid = as.integer(hospid)) %>% 
+    dat %>% mutate(hospid = as.integer(as.character(hospid))) %>% 
       group_by(hospid, year) %>% summarize(N = n()) %>% ungroup() %>% 
       group_by(hospid) %>% summarize(avgN = mean(N)) %>% ungroup())
 
@@ -84,7 +84,7 @@ ggplot(bl, aes(x = mr, y = RR))+geom_point(aes(size = avgN)) +
   geom_vline(xintercept = c(0.1, 0.166), linetype = 2) + # quartiles
   labs(x = 'Non-lupus mortality rate')
 
-annual_lupus <- dat %>% mutate(hospid = as.integer(hospid)) %>% 
+annual_lupus <- dat %>% mutate(hospid = as.integer(as.character(hospid))) %>% 
   group_by(hospid, year) %>% summarise(lup = sum(lupus)) %>% ungroup() %>% 
   group_by(hospid) %>% summarize(avglup = mean(lup)) %>% ungroup()
 
@@ -124,6 +124,7 @@ ggpairs(left_join(bl, annual_lupus), columns = c(3:5,2))
 
 
 bl <- bl %>% left_join(annual_lupus)
+
 # Bootstrap variability of RRs ----------------------------------------------------------------
 
 bootstraps <- read_csv(file.path(datadir,'data','bootstrapRR1.csv'))
