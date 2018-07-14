@@ -1,5 +1,4 @@
 0	age	q
-<<<<<<< HEAD
 1	zipinc_qrtl.1	q
 2	zipinc_qrtl.2	q
 3	zipinc_qrtl.3	q
@@ -19,28 +18,3 @@
 17	failure_liver.1	q
 18	failure_renal.0	q
 19	failure_renal.1	q
-=======
-1	race.1	q
-2	race.2	q
-3	race.3	q
-4	race.other	q
-5	zipinc_qrtl.1	q
-6	zipinc_qrtl.2	q
-7	zipinc_qrtl.3	q
-8	zipinc_qrtl.4	q
-9	elix_score	q
-10	male.0	q
-11	male.1	q
-12	ventilator.0	q
-13	ventilator.1	q
-14	failure_cardiac.0	q
-15	failure_cardiac.1	q
-16	failure_neuro.0	q
-17	failure_neuro.1	q
-18	failure_heme.0	q
-19	failure_heme.1	q
-20	failure_liver.0	q
-21	failure_liver.1	q
-22	failure_renal.0	q
-23	failure_renal.1	q
->>>>>>> 4c6d46b01d53f10b4320c4c7a6e44bc5d710c69e

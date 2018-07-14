@@ -10,6 +10,7 @@ import operator
 import joblib
 
 
+
 pd.__version__
 dat = pd.read_csv('indiv_dat2.csv') # Generated in DataMunging.R, no race
 indiv = dat.drop(['hospid','lupus'], axis=1)
@@ -42,6 +43,7 @@ def create_feature_map(features):
 		outfile.write('{0}\t{1}\tq\n'.format(i, feat))
 		i = i + 1
 	outfile.close()
+
 ftrs = list(np.array(indiv.drop('dead', axis = 1).columns))
 features = ['Age','SES_Q1','SES_Q2','SES_Q3','SES_Q4','Elixhauser', 'Female','Male', 'Ventilator','Ventilator',
     'Cardiac fail','Cardiac fail','Neuro fail','Neuro fail', 'Heme fail','Heme fail','Liver fail','Liver fail',
@@ -107,13 +109,13 @@ def compute_RR(d):
 
 results = compute_RR(dat)
 
-results = results.loc[~pd.isna(results.RR),:]
+# results = results.loc[~pd.isna(results.RR),:]
 results.shape
 bl2=dat[dat.lupus==0].groupby('hospid').size()
 bl3 = dat[dat.lupus==0].groupby('hospid')['dead'].mean()
 bl3.head()
 blah = pd.concat([results, bl2, bl3], axis = 1)
-blah.columns = ['0','1','RR','N','NonLupusMort']
+blah.columns = ['RR','N','NonLupusMort']
 blah.head()
 roc_auc_score(dat.dead, dat.risk)
 
@@ -140,7 +142,7 @@ def model_scoring(mod, d):
     d1['risk'] = risk
     return(d1)
 
-D = pd.read_csv('indiv_dat1.csv') # Generated in DataMunging.R
+D = pd.read_csv('indiv_dat2.csv') # Generated in DataMunging.R
 results = compute_RR(model_scoring(clf, D))
 np.random.seed(2940)
 for i in range(1000):
