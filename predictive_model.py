@@ -87,6 +87,20 @@ frac_pos1, mean_pred1 = calibration_curve(y, pr, n_bins = 20)
 plt.plot(mean_pred, frac_pos, 'sg-', mean_pred1, frac_pos1, 'sb-', [0,1],[0,1], 'k:')
 plt.show()
 
+# ROC curves
+from sklearn.metrics import roc_curve
+fpr = dict()
+tpr = dict()
+fpr[0],tpr[0],_ = roc_curve(y, p)
+fpr[1],tpr[1],_ = roc_curve(y,pr)
+plt.plot(fpr[0],tpr[0], color = 'blue', lw = 2, label = 'XGBoost (AUC = %0.2f)' % roc_auc_score(y,p))
+plt.plot(fpr[1],tpr[1], color = 'green', lw = 2, label = 'Random Forest (AUC = %0.2f)' % roc_auc_score(y,pr))
+plt.plot([0,1],[0,1], color = 'navy', linestyle = '--')
+plt.legend(loc = 'lower right')
+plt.show()
+
+
+
 # Feature importances
 importance = clf.get_booster().get_score(fmap = 'xgb.fmap', importance_type = 'gain')
 importance = sorted(importance.items(), key = operator.itemgetter(1))
