@@ -67,7 +67,7 @@ bl <- indiv1_risk %>% group_by(hospid, lupus) %>%
   select(hospid, RR) %>% 
   left_join(
     indiv1_risk %>% 
-      filter(lupus == 0) %>% 
+      # filter(lupus == 0) %>% 
       group_by(hospid) %>% 
       summarize(mr = mean(dead)) %>% 
       ungroup()) %>% 
@@ -82,7 +82,7 @@ ggplot(bl, aes(x = mr, y = RR))+geom_point(aes(size = avgN)) +
   scale_size('# patients (annual)', breaks = c(0,50,100, 500, 1000, 2000, 5000), range = c(1,10))+
   geom_hline(yintercept = c(0.5, 1,2), linetype = c(2,1,2), color = 'red') +
   geom_vline(xintercept = c(0.1, 0.166), linetype = 2) + # quartiles
-  labs(x = 'Non-lupus mortality rate')
+  labs(x = 'Mortality rate')
 
 annual_lupus <- dat %>% mutate(hospid = as.integer(as.character(hospid))) %>% 
   group_by(hospid, year) %>% summarise(lup = sum(lupus)) %>% ungroup() %>% 
@@ -119,8 +119,8 @@ bl %>% left_join(annual_lupus) %>%
   labs(x = 'Avg number of lupus sepsis patients', 
        y = 'Relative SMR of lupus patients')
 
-library(GGally)
-ggpairs(left_join(bl, annual_lupus), columns = c(3:5,2))
+# library(GGally)
+# ggpairs(left_join(bl, annual_lupus), columns = c(3:5,2))
 
 
 bl <- bl %>% left_join(annual_lupus)
@@ -170,10 +170,10 @@ library(rpart.plot)
 tree_dat1 <- hosp_data %>% 
   select( teach, highvolume, bedsize, hosp_region,
          Mortality_rate, Sepsis_yr, Lupus_Sepsis_yr, risk)
-tree1 <- rpart(risk ~ . , data = tree_dat1)
-prp(tree1, type = 2)
+tree1 <- rpart(risk ~ . , data = tree_dat1, maxdepth = 3)
+prp(tree1, type = 2, extra = 1)
 
-tree1.1 <- rpart(risk~., data = tree_dat1 %>% select(-Lupus_Sepsis_yr)) #keep both 1 and 1.1
+tree1.1 <- rpart(risk~., data = tree_dat1 %>% select(-Lupus_Sepsis_yr), maxdepth = 3) #keep both 1 and 1.1
 prp(tree1.1, type = 2)
 
 tree_dat2 <- hosp_data %>% 
