@@ -152,6 +152,14 @@ def compute_RR(d):
     results = results['RR']
     return(results)
 
+
+plt.plot(compute_RR(dat), compute_RR(dat2), 'k.')
+plt.plot([0,8],[0,8], linestyle = '--', color = 'lightgrey')
+plt.xlabel('RR from xgboost')
+plt.ylabel('RR from randomforest')
+plt.show()
+
+
 results = compute_RR(dat)
 
 # results = results.loc[~pd.isna(results.RR),:]
