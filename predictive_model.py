@@ -160,29 +160,29 @@ plt.ylabel('RR from randomforest')
 plt.show()
 
 
-results = compute_RR(dat)
+results = compute_RR(dat2)
 
 # results = results.loc[~pd.isna(results.RR),:]
 results.shape
-bl2=dat[dat.lupus==0].groupby('hospid').size()
-bl3 = dat[dat.lupus==0].groupby('hospid')['dead'].mean()
+bl2=dat2[dat2.lupus==0].groupby('hospid').size()
+bl3 = dat2.groupby('hospid')['dead'].mean()
 bl3.head()
 blah = pd.concat([results, bl2, bl3], axis = 1)
-blah.columns = ['RR','N','NonLupusMort']
+blah.columns = ['RR','N','Mortality']
 blah.head()
-roc_auc_score(dat.dead, dat.risk)
+roc_auc_score(dat2.dead, dat2.risk)
 
-blah.plot(x = 'NonLupusMort', y = 'RR', kind='scatter')
+blah.plot(x = 'Mortality', y = 'RR', kind='scatter')
 plt.show()
 
-plt.scatter(blah.N, blah.NonLupusMort); plt.show()
+plt.scatter(blah.N, blah.Mortality); plt.show()
 import seaborn as sns
-sns.regplot('NonLupusMort', 'RR', data=blah[blah.RR>0], lowess=True)
+sns.regplot('Mortality', 'RR', data=blah[blah.RR>0], lowess=True)
 plt.plot([0,0.35],[1,1])
 plt.plot([0,0.35], [2,2], 'r:')
 plt.show()
 
-blah.to_csv('Hosp_indiv1_results.csv', index = False)
+blah.to_csv('Hosp_indiv1RF_results.csv', index = False)
 ######################################################################
 
 # Bootstrapping to capture uncertainty of estimates
