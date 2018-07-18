@@ -100,8 +100,6 @@ plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('Receiver Operating Curve (ROC)')
 plt.legend(loc = 'lower right')
-plt.show()
-
 
 
 # Feature importances
