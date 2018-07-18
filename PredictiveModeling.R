@@ -159,7 +159,7 @@ hosp_risk <- summarize_all(bootstraps, funs(mean(. > 2, na.rm = T))) %>% gather(
 bl <- bl %>% mutate(hospid = as.character(hospid))
 hosp_data <- readRDS(file.path(datadir, 'data','rda','exp_sepsis2','hosp_data.rds'))
 hosp_data <- hosp_data %>% left_join(hosp_risk) %>% left_join(bl) %>% 
-  mutate(high_RR = ifelse(RR > 2, 1, 0)) %>% 
+  mutate(high_RR = ifelse(RR >= 2, 1, 0)) %>% 
   rename(Mortality_rate = mr,
          Sepsis_yr = avgN,
          Lupus_Sepsis_yr = avglup)
