@@ -70,13 +70,21 @@ import shutil
 import os
 shutil.copy2('PredictedModel.joblib.dat', os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data'))
 
+## An alternative random forest model with better characteristics
+crf = RandomForestRegressor(n_estimators = 250, min_samples_leaf = 10)
+crf.fit(X,y)
+pr = crf.predict(X)
+joblib.dump(crf, 'PredictedModelRF.joblib.dat')
+shutil.copy2('PredictedModelRF.joblib.dat', os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data'))
+
 # Calibration
 from sklearn.metrics import brier_score_loss
 p = clf.predict(X)
 brier_score_loss(y, p)
 from sklearn.calibration import calibration_curve
 frac_pos, mean_pred = calibration_curve(y, p, n_bins=20)
-plt.plot(mean_pred, frac_pos, 's-', [0,1],[0,1], 'k:')
+frac_pos1, mean_pred1 = calibration_curve(y, pr, n_bins = 20)
+plt.plot(mean_pred, frac_pos, 'sg-', mean_pred1, frac_pos1, 'sb-', [0,1],[0,1], 'k:')
 plt.show()
 
 # Feature importances
@@ -84,9 +92,12 @@ importance = clf.get_booster().get_score(fmap = 'xgb.fmap', importance_type = 'g
 importance = sorted(importance.items(), key = operator.itemgetter(1))
 df_importance = pd.DataFrame(importance, columns = ['feature','fscore'])
 df_importance['feature'] = pd.Series(['SES_Q2','SES_Q4','Gender','SES_Q1','Neuro fail','SES_Q3','Age','Renal fail','Liver fail','Elixhauser','Bone marrow failure','Cardiac failure','Ventilator'])
+df_importance = df_importance.sort_index(ascending=False)
+df_importance['prop_fscore'] = df_importance.fscore/np.max(df_importance.fscore)
 plt.figure()
 df_importance[df_importance.fscore > 10].plot()
 df_importance[df_importance.fscore > 10].plot(kind = 'barh', x = 'feature',y = 'fscore', legend = False)
+plt.show()
 plt.gcf().savefig('feature_importances.png')
 # Predictions from model
 risk = clf.predict(X)
