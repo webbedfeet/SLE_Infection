@@ -126,10 +126,14 @@ feature_names = ['Dead','Age','SES Q1','SES Q2','SES Q3','SES Q4','Elixhauser Sc
 name_map = dict(zip([x.replace('.1','') for x in indiv1.columns], feature_names))
 df_importance['named_features'] = [name_map[x] for x in df_importance['feature']]
 
-df_importance.plot(kind = 'barh', x = 'named_features', y = 'fscore', legend = False, color = 'grey')
-plt.xlabel('Feature importance')
-plt.ylabel('')
+ax =sns.barplot(y = 'named_features', x = 'fscore', data = df_importance.sort_values(by = 'fscore', ascending = False, axis = 0), color = 'grey')
+ax.set(xlabel = 'Feature importance', ylabel = '')
 plt.savefig(os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/feature_importance.pdf'), bbox_inches = 'tight')
+
+
+#df_importance.plot(kind = 'barh', x = 'named_features', y = 'fscore', legend = False, color = 'grey')
+#plt.xlabel('Feature importance')
+#plt.ylabel('')
 
 # Predictions from model
 risk = clf.predict(X)
