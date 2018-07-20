@@ -123,7 +123,7 @@ bl %>% left_join(annual_lupus) %>%
 # ggpairs(left_join(bl, annual_lupus), columns = c(3:5,2))
 
 
-bl <- bl %>% left_join(annual_lupus)
+bl <- bl %>% left_join(annual_lupus %>% mutate(hospid = as.character(hospid)))
 
 # Bootstrap variability of RRs ----------------------------------------------------------------
 
@@ -170,10 +170,10 @@ library(rpart.plot)
 tree_dat1 <- hosp_data %>% 
   select( teach, highvolume, bedsize, hosp_region,
          Mortality_rate, Sepsis_yr, Lupus_Sepsis_yr, risk)
-tree1 <- rpart(risk ~ . , data = tree_dat1)
+tree1 <- rpart(risk ~ . , data = tree_dat1, maxdepth = 3)
 prp(tree1, type = 2, extra = 1)
 
-tree1.1 <- rpart(risk~., data = tree_dat1 %>% select(-Lupus_Sepsis_yr)) #keep both 1 and 1.1
+tree1.1 <- rpart(risk~., data = tree_dat1 %>% select(-Lupus_Sepsis_yr), maxdepth = 3) #keep both 1 and 1.1
 prp(tree1.1, type = 2, extra = 1)
 
 tree_dat2 <- hosp_data %>% 
