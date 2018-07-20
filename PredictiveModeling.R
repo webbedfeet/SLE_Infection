@@ -38,7 +38,7 @@ dat <- readRDS(file.path(datadir,'data','rda','exp_sepsis2','full_data.rds'))
 file.copy('indiv_dat1_risk.csv', file.path(datadir, 'data','indiv_dat1_risk.csv'), overwrite = T)
 file.copy('indiv_dat2_risk.csv', file.path(datadir, 'data','indiv_dat2_risk.csv'))
 
-indiv1_risk <- read_csv(file.path(datadir,'data','indiv_dat1_risk.csv'))
+indiv1_risk <- read_csv(file.path(datadir,'data','indiv_dat1_risk2.csv')) # Updated for RF prediction
 
 ## Calibration of the model
 indiv1_risk %>% 
@@ -46,8 +46,8 @@ indiv1_risk %>%
   group_by(risk_cat) %>% 
   summarize(avgDeath = mean(dead), # Avg mortality rate for each group of predicted values
             avgPred = mean(risk)) %>% # Avg prediction for each group of predicted values
-  ungroup() -> bl #
-ggplot(bl, aes(avgPred, avgDeath))+geom_point() + geom_abline() + 
+  ungroup() -> blah #
+ggplot(blah, aes(avgPred, avgDeath))+geom_point() + geom_abline() + 
   labs(x = 'Predicted mortality', y = 'Observed mortality')
   
 ## AUC of the predictions
@@ -64,7 +64,7 @@ bl <- indiv1_risk %>% group_by(hospid, lupus) %>%
   select(hospid, oe, lupus) %>% 
   spread(lupus, oe) %>% 
   mutate(RR = `1`/`0`) %>% 
-  select(hospid, RR) %>% 
+  # select(hospid, RR) %>% 
   left_join(
     indiv1_risk %>% 
       # filter(lupus == 0) %>% 
@@ -154,7 +154,7 @@ ggplot(ranges,aes(mins, maxs)) +geom_point()
 
 # Tree-building -------------------------------------------------------------------------------
 
-hosp_risk <- summarize_all(bootstraps, funs(mean(. > 2, na.rm = T))) %>% gather() %>% 
+hosp_risk <- summarize_all(bootstraps, funs(mean(. >= 2, na.rm = T))) %>% gather() %>% 
   set_names(c('hospid','risk'))
 bl <- bl %>% mutate(hospid = as.character(hospid))
 hosp_data <- readRDS(file.path(datadir, 'data','rda','exp_sepsis2','hosp_data.rds'))
@@ -170,11 +170,11 @@ library(rpart.plot)
 tree_dat1 <- hosp_data %>% 
   select( teach, highvolume, bedsize, hosp_region,
          Mortality_rate, Sepsis_yr, Lupus_Sepsis_yr, risk)
-tree1 <- rpart(risk ~ . , data = tree_dat1, maxdepth = 3)
+tree1 <- rpart(risk ~ . , data = tree_dat1)
 prp(tree1, type = 2, extra = 1)
 
-tree1.1 <- rpart(risk~., data = tree_dat1 %>% select(-Lupus_Sepsis_yr), maxdepth = 3) #keep both 1 and 1.1
-prp(tree1.1, type = 2)
+tree1.1 <- rpart(risk~., data = tree_dat1 %>% select(-Lupus_Sepsis_yr)) #keep both 1 and 1.1
+prp(tree1.1, type = 2, extra = 1)
 
 tree_dat2 <- hosp_data %>% 
   select(teach, highvolume, bedsize, hosp_region, Mortality_rate, Sepsis_yr, Lupus_Sepsis_yr,
