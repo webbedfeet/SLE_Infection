@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import operator
 import joblib
+from dask_ml.wrappers import ParallelPostFit
 
 
 
@@ -196,7 +197,7 @@ def model_scoring(mod, d):
     return(d1)
 
 D = pd.read_csv('indiv_dat2.csv') # Generated in DataMunging.R
-results = compute_RR(model_scoring(clf, D))
+results = compute_RR(model_scoring(crf, D))
 np.random.seed(2940)
 for i in range(1000):
     print(i)
@@ -205,7 +206,7 @@ for i in range(1000):
     D0 = D[D.lupus==0].sample(frac = 1, replace = True, axis = 0)
     Dnew = D1.append(D0)
     #D1 = D.sample(frac = 1, replace = True, axis = 0)
-    r = compute_RR(model_scoring(clf, Dnew))
+    r = compute_RR(model_scoring(crf, Dnew))
     results = pd.concat([results, r], axis = 1)
 results.columns = range(1001)
 results = results.replace(np.inf, np.NaN)
