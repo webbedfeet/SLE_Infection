@@ -35,8 +35,13 @@ hosp_data %>%
     geom_hline(yintercept = 2, linetype = 2) +
     labs(x = 'Sepsis cases with SLE per year', y = 'Risk Ratio (RR)') -> plt3
 
+hosp_data %>% 
+  ggplot(aes(x = `0`, y = RR)) + geom_point()+
+    geom_hline(yintercept = 2, linetype = 2) + 
+    labs(x = 'Observed/Expected among non-SLE', y = 'Risk Ratio (RR)') -> plt4
+
 cairo_pdf('graphs/panel.pdf')
-plot_grid(plt1, plt2, NULL, plt3, labels = c('A','B','', 'C'), ncol = 2)
+plot_grid(plt1, plt2, plt4, plt3, labels = c('A','B','C', 'D'), ncol = 2)
 dev.off()
 
 cairo_pdf('graphs/Mortality.pdf')
@@ -47,6 +52,9 @@ print(plt2)
 dev.off()
 cairo_pdf('graphs/SLE_Sepsis.pdf')
 print(plt3)
+dev.off()
+cairo_pdf('graphs/OE.pdf')
+print(plt4)
 dev.off()
 setwd('graphs')
 system('./pdf2tiff.py -c')
