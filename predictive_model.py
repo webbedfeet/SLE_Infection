@@ -4,6 +4,7 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split, GridSearchCV
 #from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score, accuracy_score
+from sklearn.ensemble import RandomForestRegressor
 import matplotlib.pyplot as plt
 import seaborn as sns
 import operator
@@ -64,7 +65,7 @@ clf = xgb.XGBRegressor(max_depth = 6,
         seed = 2049,
         n_estimators = 10)
 clf.fit(X,y)
-import joblib
+
 joblib.dump(clf, 'PredictedModel.joblib.dat')
 # clf = joblib.load('PredictedModel.joblib.dat')
 import shutil
@@ -72,9 +73,11 @@ import os
 shutil.copy2('PredictedModel.joblib.dat', os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data'))
 
 ## An alternative random forest model with better characteristics
-crf = RandomForestRegressor(n_estimators = 250, min_samples_leaf = 10)
-crf.fit(X,y)
-pr = crf.predict(X)
+crf = RandomForestRegressor(n_estimators = 250, min_samples_leaf = 10,n_jobs = -1)
+indiv1 = indiv.drop([x for x in indiv.columns if x.find('0')>-1], axis = 1)
+X1, y1 = indiv1.drop('dead', axis = 1).values, indiv1['dead'].values
+crf.fit(X1,y1)
+pr = crf.predict(X1)
 joblib.dump(crf, 'PredictedModelRF.joblib.dat')
 shutil.copy2('PredictedModelRF.joblib.dat', os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data'))
 
@@ -104,17 +107,33 @@ plt.legend(loc = 'lower right')
 
 
 # Feature importances
-importance = clf.get_booster().get_score(fmap = 'xgb.fmap', importance_type = 'gain')
-importance = sorted(importance.items(), key = operator.itemgetter(1))
-df_importance = pd.DataFrame(importance, columns = ['feature','fscore'])
-df_importance['feature'] = pd.Series(['SES_Q2','SES_Q4','Gender','SES_Q1','Neuro fail','SES_Q3','Age','Renal fail','Liver fail','Elixhauser','Bone marrow failure','Cardiac failure','Ventilator'])
-df_importance = df_importance.sort_index(ascending=False)
+# importance = clf.get_booster().get_score(fmap = 'xgb.fmap', importance_type = 'gain')
+#importance = sorted(importance.items(), key = operator.itemgetter(1))
+#df_importance = pd.DataFrame(importance, columns = ['feature','fscore'])
+#df_importance['feature'] = pd.Series(['SES_Q2','SES_Q4','Gender','SES_Q1','Neuro fail','SES_Q3','Age','Renal fail','Liver fail','Elixhauser','Bone marrow failure','Cardiac failure','Ventilator'])
+#df_importance = df_importance.sort_index(ascending=False)
+#plt.figure()
+#df_importance[df_importance.fscore > 10].plot()
+#df_importance[df_importance.fscore > 10].plot(kind = 'barh', x = 'feature',y = 'fscore', legend = False)
+#plt.show()
+#plt.gcf().savefig('feature_importances.png')
+
+df_importance = pd.DataFrame({'feature':[x.replace('.1','') for x in indiv1.columns[1:]], 'fscore': crf.feature_importances_})
 df_importance['prop_fscore'] = df_importance.fscore/np.max(df_importance.fscore)
-plt.figure()
-df_importance[df_importance.fscore > 10].plot()
-df_importance[df_importance.fscore > 10].plot(kind = 'barh', x = 'feature',y = 'fscore', legend = False)
-plt.show()
-plt.gcf().savefig('feature_importances.png')
+df_importance = df_importance.sort_values(by = 'fscore', axis = 0)
+feature_names = ['Dead','Age','SES Q1','SES Q2','SES Q3','SES Q4','Elixhauser Score', 'Male','Ventilator use',
+                 'Cardiac failure','Neurologic failure','Bone marrow failure','Liver failure','Renal failure']
+name_map = dict(zip([x.replace('.1','') for x in indiv1.columns], feature_names))
+df_importance['named_features'] = [name_map[x] for x in df_importance['feature']]
+
+ax =sns.barplot(y = 'named_features', x = 'fscore', data = df_importance.sort_values(by = 'fscore', ascending = False, axis = 0), color = 'grey')
+ax.set(xlabel = 'Feature importance', ylabel = '')
+plt.savefig(os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/feature_importance.pdf'), bbox_inches = 'tight')
+
+
+#df_importance.plot(kind = 'barh', x = 'named_features', y = 'fscore', legend = False, color = 'grey')
+#plt.xlabel('Feature importance')
+#plt.ylabel('')
 
 # Predictions from model
 risk = clf.predict(X)
@@ -123,13 +142,10 @@ dat.to_csv('indiv_dat1_risk.csv', index = False)
 shutil.copy2('indiv_dat1_risk.csv', os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data'))
 
 dat2 = dat.copy()
-dat2['risk'] = crf.predict(X)
+dat2['risk'] = crf.predict(X1)
 dat2.to_csv('indiv_dat1_risk2.csv', index = False)
 shutil.copy2('indiv_dat1_risk2.csv', os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data'))
 
-
-# TODO: Make computation of RR into a function
-# TODO: Run bootstrap to get RR for each hospital
 
 def compute_RR(d):
     """
@@ -177,9 +193,8 @@ blah.plot(x = 'Mortality', y = 'RR', kind='scatter')
 plt.show()
 
 plt.scatter(blah.N, blah.Mortality); plt.show()
-import seaborn as sns
 sns.regplot('Mortality', 'RR', data=blah[blah.RR>0], lowess=True)
-plt.plot([0,0.35],[1,1])
+plt.plot([0,0.35],[1,1],'k')
 plt.plot([0,0.35], [2,2], 'r:')
 plt.show()
 
@@ -191,7 +206,8 @@ blah.to_csv('Hosp_indiv1RF_results.csv', index = False)
 def model_scoring(mod, d):
     d1 = d.copy() # Otherwise changes happen in place
     indiv = d1.drop(['hospid','lupus'], axis=1)
-    X, y = indiv.drop('dead',axis=1).values, indiv['dead'].values
+    indiv1 = indiv.drop([x for x in indiv.columns if x.find('0')>-1], axis = 1) # for random forest model
+    X = indiv1.drop('dead',axis=1).values
     risk = mod.predict(X)
     d1['risk'] = risk
     return(d1)
