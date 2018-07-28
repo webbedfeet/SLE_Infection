@@ -48,6 +48,23 @@ dev.off()
 cairo_pdf('graphs/SLE_Sepsis.pdf')
 print(plt3)
 dev.off()
+
+
+# O/E vs RR graphs ----------------------------------------------------------------------------
+
+indiv1_risk <- read_csv(file.path(datadir,'data','indiv_dat1_risk.csv'))
+bl <- indiv1_risk %>% group_by(hospid) %>% 
+  summarize(obs = sum(dead), expect = sum(risk)) %>% 
+  ungroup() %>% 
+  mutate(oe = obs/expect) %>% 
+  select(hospid, oe, lupus) %>% 
+  spread(lupus, oe) %>% 
+  mutate(RR = `1`/`0`) 
+
+
+# Converting graphs ---------------------------------------------------------------------------
+
+
 setwd('graphs')
 system('./pdf2tiff.py -c')
 setwd('..')
