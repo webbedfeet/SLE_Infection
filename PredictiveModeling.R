@@ -56,7 +56,8 @@ library(ROCR)
 auc <- performance(prediction(indiv1_risk$risk, as.factor(indiv1_risk$dead)),'auc')
 glue::glue('{auc@y.name}: {round(auc@y.values[[1]],3)}')
 
-## Looking at RR and patterns with hospital properties
+# Looking at RR and patterns with hospital properties ----
+
 bl <- indiv1_risk %>% group_by(hospid, lupus) %>% 
   summarize(obs = sum(dead), expect = sum(risk)) %>% 
   ungroup() %>% 
