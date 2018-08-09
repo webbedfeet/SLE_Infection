@@ -121,8 +121,8 @@ plt.legend(loc = 'lower right')
 df_importance = pd.DataFrame({'feature':[x.replace('.1','') for x in indiv1.columns[1:]], 'fscore': crf.feature_importances_})
 df_importance['prop_fscore'] = df_importance.fscore/np.max(df_importance.fscore)
 df_importance = df_importance.sort_values(by = 'fscore', axis = 0)
-feature_names = ['Dead','Age','SES Q1','SES Q2','SES Q3','SES Q4','Elixhauser Score', 'Male','Ventilator use',
-                 'Cardiac failure','Neurologic failure','Bone marrow failure','Liver failure','Renal failure']
+feature_names = ['Dead','Age','SES Q1','SES Q2','SES Q3','SES Q4','Elixhauser Score', 'Male','Respiratory dysfunction',
+                 'Cardiac dysfunction','Neurologic dysfunction','Hematologic dysfunction','Hepatic dysfunction','Renal dysfunction']
 name_map = dict(zip([x.replace('.1','') for x in indiv1.columns], feature_names))
 df_importance['named_features'] = [name_map[x] for x in df_importance['feature']]
 
@@ -250,8 +250,8 @@ shutil.copy2('PredictedModelRF.joblib.dat', os.path.expanduser('~/Dropbox/NIAMS/
 df_importance2 = pd.DataFrame({'feature':[x.replace('.1','') for x in indiv3.columns[1:]], 'fscore': crf2.feature_importances_})
 df_importance2['prop_fscore'] = df_importance2.fscore/np.max(df_importance2.fscore)
 df_importance2 = df_importance2.sort_values(by = 'fscore', axis = 0)
-feature_names2 = ['Dead','SLE','Age','SES Q1','SES Q2','SES Q3','SES Q4','Elixhauser Score', 'Male','Ventilator use',
-                 'Cardiac failure','Neurologic failure','Bone marrow failure','Liver failure','Renal failure']
+feature_names2 = ['Dead','SLE','Age','SES Q1','SES Q2','SES Q3','SES Q4','Elixhauser Score', 'Male','Respiratory dysfunction',
+                 'Cardiac dysfunction','Neurologic dysfunction','Hematologic dysfunction','Hepatic dysfunction','Renal dysfunction']
 name_map = dict(zip([x.replace('.1','') for x in indiv3.columns], feature_names2))
 df_importance2['named_features'] = [name_map[x] for x in df_importance2['feature']]
 ax =sns.barplot(y = 'named_features', x = 'fscore', data = df_importance2.sort_values(by = 'fscore', ascending = False, axis = 0), color = 'grey')
