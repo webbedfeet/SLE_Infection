@@ -131,6 +131,11 @@ ax.set(xlabel = 'Feature importance', ylabel = '')
 plt.savefig(os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/feature_importance.pdf'), bbox_inches = 'tight')
 
 
+ax =sns.barplot(y = 'named_features', x = 'prop_fscore', data = df_importance.sort_values(by = 'fscore', ascending = False, axis = 0), color = 'grey')
+ax.set(xlabel = 'Relative feature importance', ylabel = '')
+plt.savefig(os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/feature_importance_prop.pdf'), bbox_inches = 'tight')
+
+
 #df_importance.plot(kind = 'barh', x = 'named_features', y = 'fscore', legend = False, color = 'grey')
 #plt.xlabel('Feature importance')
 #plt.ylabel('')
@@ -230,6 +235,28 @@ results1 = results.T
 results1.to_csv(os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data/bootstrapRR1.csv'), index = False)
 
 
+## Exploratory RF model using lupus status, to show that lupus status is not predictive of mortality overall
+
+indiv3 = dat.drop(['hospid'], axis=1)
+
+crf2 = RandomForestRegressor(n_estimators = 250, min_samples_leaf = 10,n_jobs = -1)
+indiv3 = indiv3.drop([x for x in indiv3.columns if x.find('0')>-1], axis = 1)
+X3, y3 = indiv3.drop('dead', axis = 1).values, indiv3['dead'].values
+crf2.fit(X3,y3)
+pr2 = crf2.predict(X1)
+joblib.dump(crf, 'PredictedModelRF.joblib.dat')
+shutil.copy2('PredictedModelRF.joblib.dat', os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/data'))
+
+df_importance2 = pd.DataFrame({'feature':[x.replace('.1','') for x in indiv3.columns[1:]], 'fscore': crf2.feature_importances_})
+df_importance2['prop_fscore'] = df_importance2.fscore/np.max(df_importance2.fscore)
+df_importance2 = df_importance2.sort_values(by = 'fscore', axis = 0)
+feature_names2 = ['Dead','SLE','Age','SES Q1','SES Q2','SES Q3','SES Q4','Elixhauser Score', 'Male','Ventilator use',
+                 'Cardiac failure','Neurologic failure','Bone marrow failure','Liver failure','Renal failure']
+name_map = dict(zip([x.replace('.1','') for x in indiv3.columns], feature_names2))
+df_importance2['named_features'] = [name_map[x] for x in df_importance2['feature']]
+ax =sns.barplot(y = 'named_features', x = 'fscore', data = df_importance2.sort_values(by = 'fscore', ascending = False, axis = 0), color = 'grey')
+ax.set(xlabel = 'Feature importance', ylabel = '')
+plt.savefig(os.path.expanduser('~/Dropbox/NIAMS/Ward/SLE_Infections/feature_importance_with_SLE.pdf'), bbox_inches = 'tight')
 
 
 ## Not using race
