@@ -41,7 +41,7 @@ hosp_data %>%
     labs(x = 'Observed/Expected among non-SLE', y = 'Risk Ratio (RR)') -> plt4
 
 cairo_pdf('graphs/panel.pdf')
-plot_grid(plt1, plt2, plt4, plt3, labels = c('A','B','C', 'D'), ncol = 2)
+plot_grid(plt1, plt2,NULL, plt3, labels = c('A','B','', 'C'), ncol = 2)
 dev.off()
 
 cairo_pdf('graphs/Mortality.pdf')
