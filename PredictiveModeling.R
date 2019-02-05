@@ -182,3 +182,18 @@ tree_dat2 <- hosp_data %>%
          high_RR)
 tree2 = rpart(as.factor(high_RR) ~. , data = tree_dat2)
 prp(tree2, type = 4)
+
+#` Evaluating the statistical significance of the first split, based on Lupus_Sepsis_yr >= 3.9
+
+library(infer)
+set.seed(392734)
+blah <- hosp_data %>% mutate(ind1 = Lupus_Sepsis_yr >= 3.875)
+d_hat = blah %>% 
+  specify(risk ~ ind1) %>% 
+  calculate(stat = 'diff in means', order = c(TRUE, FALSE))
+null_distn <- blah %>% specify(risk ~ ind1) %>% 
+  hypothesize(null = 'independence') %>% 
+  generate(reps = 5000, type = 'permute') %>% 
+  calculate(stat = 'diff in means', order = c(TRUE, FALSE))
+null_distn %>% get_p_value(obs_stat = d_hat, direction = 'two_sided')
+visualize(null_distn)+ shade_p_value(obs_stat = d_hat, direction = 'two_sided')
